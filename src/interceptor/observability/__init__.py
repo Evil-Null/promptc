@@ -17,6 +17,7 @@ from interceptor.observability.log_rotate import (
     parse_rotatable_date,
     rotate_logs,
 )
+from interceptor.observability.log_search import parse_since, search_logs
 from interceptor.observability.metrics import StatsSnapshot, TemplateUsage, aggregate
 from interceptor.observability.models import DecisionRecord
 
@@ -33,7 +34,9 @@ __all__ = [
     "log_decision",
     "parse_log_date",
     "parse_rotatable_date",
+    "parse_since",
     "prune_logs_before",
     "read_daily_log",
     "rotate_logs",
+    "search_logs",
 ]

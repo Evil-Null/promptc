@@ -904,9 +904,77 @@ def rotate(
         console.print(f"  Skipped    : {result.skipped_files} non-log files")
 
 
-# ---------------------------------------------------------------------------
-# Stats (derived metrics)
-# ---------------------------------------------------------------------------
+@logs_app.command()
+def search(
+    template: Annotated[
+        Optional[str],
+        typer.Option("--template", help="Filter by selected template."),
+    ] = None,
+    since: Annotated[
+        Optional[str],
+        typer.Option("--since", help="Time window, e.g. 30m, 1h, 7d."),
+    ] = None,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", help="Max results (newest first)."),
+    ] = 50,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Search decision log records."""
+    import json as json_mod
+
+    from interceptor.constants import LOG_DIR
+    from interceptor.observability.log_search import parse_since as _parse_since
+    from interceptor.observability.log_search import search_logs
+
+    since_td = None
+    if since is not None:
+        since_td = _parse_since(since)
+        if since_td is None:
+            console.print(f"[red]Invalid --since format:[/red] {since}")
+            console.print("Expected: 30m, 1h, 24h, 7d")
+            raise typer.Exit(code=1)
+
+    results = search_logs(
+        LOG_DIR, template=template, since=since_td, limit=limit,
+    )
+
+    if json_output:
+        print(json_mod.dumps(results, indent=2, ensure_ascii=False))
+        return
+
+    if not results:
+        console.print("[dim]No matching records found.[/dim]")
+        return
+
+    table = Table(show_lines=False)
+    table.add_column("Timestamp", style="dim", max_width=19)
+    table.add_column("Template")
+    table.add_column("Backend")
+    table.add_column("Outcome")
+    table.add_column("ms", justify="right")
+    table.add_column("Method")
+    table.add_column("Conf", justify="right")
+
+    for rec in results:
+        ts = rec.get("timestamp", "-")[:19]
+        tpl = rec.get("selected_template") or "-"
+        bk = rec.get("backend") or "-"
+        out = rec.get("outcome") or "-"
+        et = rec.get("execution_time_ms")
+        et_s = str(et) if et is not None else "-"
+        method = rec.get("selection_method") or "-"
+        conf = rec.get("confidence")
+        conf_s = str(conf) if conf is not None else "-"
+        style = "green" if out == "success" else ("red" if out == "error" else "")
+        out_s = f"[{style}]{out}[/{style}]" if style else out
+        table.add_row(ts, tpl, bk, out_s, et_s, method, conf_s)
+
+    console.print(f"[bold]Search results[/bold] ({len(results)} records)")
+    console.print(table)
 
 
 @app.command()
