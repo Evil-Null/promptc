@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from interceptor.validation.models import ValidationResult
 
 
 class BackendName(StrEnum):
@@ -84,3 +88,4 @@ class ExecutionResult:
     finish_reason: str | None = None
     usage_input_tokens: int | None = None
     usage_output_tokens: int | None = None
+    validation: ValidationResult | None = None

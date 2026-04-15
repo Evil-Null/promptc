@@ -405,6 +405,27 @@ def backend_inspect(
 
 
 # ---------------------------------------------------------------------------
+# Validation display helper
+# ---------------------------------------------------------------------------
+
+
+def _render_validation(validation: object) -> None:
+    """Print non-passing validation result to the terminal."""
+    status = getattr(validation, "status", "")
+    score = getattr(validation, "score", 0.0)
+    issues = getattr(validation, "issues", [])
+
+    tag = (
+        f"[yellow]⚠ validation: {status} ({score:.0%})[/yellow]"
+        if status == "partial"
+        else f"[red]⚠ validation: {status} ({score:.0%})[/red]"
+    )
+    console.print(tag)
+    for issue in issues:
+        console.print(f"  [dim]- {issue.message}[/dim]")
+
+
+# ---------------------------------------------------------------------------
 # Run (compile + adapt dry-run)
 # ---------------------------------------------------------------------------
 
@@ -567,6 +588,16 @@ def run(
             "usage_output_tokens": result.usage_output_tokens,
             "text": result.text,
         }
+        if result.validation:
+            data["validation"] = {
+                "status": result.validation.status.value,
+                "score": result.validation.score,
+                "validator": result.validation.validator_name,
+                "issues": [
+                    {"rule": i.rule, "message": i.message}
+                    for i in result.validation.issues
+                ],
+            }
         print(json_mod.dumps(data, indent=2, ensure_ascii=False))
         return
 
@@ -575,6 +606,9 @@ def run(
         f"\n[dim]{result.backend} · {result.finish_reason} · "
         f"in={result.usage_input_tokens} out={result.usage_output_tokens}[/dim]"
     )
+
+    if result.validation and result.validation.status != "pass":
+        _render_validation(result.validation)
 
 
 def main() -> None:

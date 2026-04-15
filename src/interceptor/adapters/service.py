@@ -84,7 +84,12 @@ class AdapterService:
         max_output_tokens: int,
         client: httpx.Client | None = None,
     ) -> ExecutionResult:
-        """Execute non-streaming request and return normalized result."""
+        """Execute non-streaming request and return normalized result.
+
+        When *compiled_prompt* is a ``CompiledPrompt`` carrying a non-empty
+        ``output_schema_text``, the response is automatically validated against
+        the inferred schema format before returning.
+        """
         _, adapter = _resolve_adapter(backend)
         request = adapter.adapt(
             compiled_prompt=compiled_prompt,
@@ -92,7 +97,16 @@ class AdapterService:
             max_output_tokens=max_output_tokens,
             stream=False,
         )
-        return adapter.send_full(request, client=client)
+        result = adapter.send_full(request, client=client)
+
+        schema_text: str = getattr(compiled_prompt, "output_schema_text", "")
+        if schema_text:
+            from interceptor.validation.registry import infer_format, validate_output
+
+            fmt = infer_format(schema_text)
+            result.validation = validate_output(result.text, fmt, schema_text)
+
+        return result
 
     def execute_stream(
         self,
