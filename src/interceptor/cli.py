@@ -161,9 +161,9 @@ def route_cmd(
 ) -> None:
     """Dry-run routing decision for input text."""
     from interceptor.config import load_config
+    from interceptor.plugins.integration import route_with_plugins
     from interceptor.routing.models import RouteZone
     from interceptor.routing.router import ProjectContext
-    from interceptor.routing.router import route as do_route
     from interceptor.template_registry import TemplateRegistry
 
     config = load_config()
@@ -175,7 +175,7 @@ def route_cmd(
         context = ProjectContext(file_path=file, file_extension=ext)
 
     try:
-        result = do_route(
+        result = route_with_plugins(
             text,
             registry,
             config,
@@ -558,8 +558,7 @@ def run(
     from interceptor.adapters.selector import select_backend
     from interceptor.adapters.service import AdapterService
     from interceptor.config import load_config
-    from interceptor.plugins.integration import compile_with_plugins
-    from interceptor.routing.router import route as do_route
+    from interceptor.plugins.integration import compile_with_plugins, route_with_plugins
     from interceptor.template_registry import TemplateRegistry
 
     if stream and json_output:
@@ -575,7 +574,7 @@ def run(
             console.print(f"[red]Error:[/red] Unknown template {template!r}")
             raise typer.Exit(code=1)
     else:
-        decision = do_route(text, registry, config)
+        decision = route_with_plugins(text, registry, config)
         if decision.template is None:
             console.print("[red]Error:[/red] No template matched.")
             raise typer.Exit(code=1)
