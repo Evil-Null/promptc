@@ -84,6 +84,8 @@ def assemble_compiled_prompt(
         quality_gates_text=compressed_sections.get("quality_gates", ""),
         anti_patterns_text=compressed_sections.get("anti_patterns", ""),
         user_input_text=raw_input,
+        quality_gates_hard=list(template.quality_gates.hard),
+        quality_gates_soft=list(template.quality_gates.soft),
     )
 
 

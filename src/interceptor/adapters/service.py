@@ -106,6 +106,17 @@ class AdapterService:
             fmt = infer_format(schema_text)
             result.validation = validate_output(result.text, fmt, schema_text)
 
+        hard_gates: list[str] = getattr(compiled_prompt, "quality_gates_hard", [])
+        soft_gates: list[str] = getattr(compiled_prompt, "quality_gates_soft", [])
+        if hard_gates or soft_gates:
+            from interceptor.validation.gate_registry import evaluate_gates
+
+            result.gate_evaluation = evaluate_gates(
+                hard_gates=hard_gates,
+                soft_gates=soft_gates,
+                output=result.text,
+            )
+
         return result
 
     def execute_stream(

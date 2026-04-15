@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from interceptor.validation.gate_models import GateEvaluation
     from interceptor.validation.models import ValidationResult
 
 
@@ -89,3 +90,4 @@ class ExecutionResult:
     usage_input_tokens: int | None = None
     usage_output_tokens: int | None = None
     validation: ValidationResult | None = None
+    gate_evaluation: GateEvaluation | None = None

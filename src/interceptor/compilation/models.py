@@ -65,6 +65,8 @@ class CompiledPrompt:
     quality_gates_text: str = ""
     anti_patterns_text: str = ""
     user_input_text: str = ""
+    quality_gates_hard: list[str] = field(default_factory=list)
+    quality_gates_soft: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)

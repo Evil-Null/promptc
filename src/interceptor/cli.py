@@ -425,6 +425,27 @@ def _render_validation(validation: object) -> None:
         console.print(f"  [dim]- {issue.message}[/dim]")
 
 
+def _render_gate_evaluation(gate_eval: object) -> None:
+    """Print gate evaluation results to terminal."""
+    hard_passed = getattr(gate_eval, "hard_passed", True)
+    gate_score = getattr(gate_eval, "gate_score", 1.0)
+    failures = getattr(gate_eval, "failures", [])
+    warnings = getattr(gate_eval, "warnings", [])
+
+    if failures:
+        console.print(
+            f"[red]✘ quality gates: FAIL ({gate_score:.0%})[/red]"
+        )
+        for f in failures:
+            console.print(f"  [red]- {f.gate_text}[/red]")
+            if f.detail:
+                console.print(f"    [dim]{f.detail}[/dim]")
+    if warnings:
+        console.print("[yellow]⚠ quality gate warnings:[/yellow]")
+        for w in warnings:
+            console.print(f"  [dim]- {w.gate_text}[/dim]")
+
+
 # ---------------------------------------------------------------------------
 # Run (compile + adapt dry-run)
 # ---------------------------------------------------------------------------
@@ -598,6 +619,21 @@ def run(
                     for i in result.validation.issues
                 ],
             }
+        if result.gate_evaluation:
+            data["gate_evaluation"] = {
+                "hard_passed": result.gate_evaluation.hard_passed,
+                "gate_score": result.gate_evaluation.gate_score,
+                "passed_hard_gates": result.gate_evaluation.passed_hard_gates,
+                "total_hard_gates": result.gate_evaluation.total_hard_gates,
+                "failures": [
+                    {"gate": r.gate_text, "evaluator": r.evaluator, "detail": r.detail}
+                    for r in result.gate_evaluation.failures
+                ],
+                "warnings": [
+                    {"gate": r.gate_text, "evaluator": r.evaluator, "detail": r.detail}
+                    for r in result.gate_evaluation.warnings
+                ],
+            }
         print(json_mod.dumps(data, indent=2, ensure_ascii=False))
         return
 
@@ -609,6 +645,11 @@ def run(
 
     if result.validation and result.validation.status != "pass":
         _render_validation(result.validation)
+
+    if result.gate_evaluation and (
+        not result.gate_evaluation.hard_passed or result.gate_evaluation.warnings
+    ):
+        _render_gate_evaluation(result.gate_evaluation)
 
 
 def main() -> None:
