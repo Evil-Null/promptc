@@ -5,6 +5,32 @@ All notable changes to the **Prompt Compiler** (`promptc`) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2025-07-16
+
+Post-audit quality pass addressing all findings from comprehensive 3-agent audit.
+
+### Added
+
+- **YamlValidator** — heuristic YAML format validation (key: value patterns, structure checks)
+- **CodeValidator** — code block detection with prose-rejection heuristic
+- **Full-text search** — `mycli logs search --query/-q` searches across all string values in log records
+- `__main__.py` entry point test coverage
+
+### Fixed
+
+- Silent exception swallowing in `log_decision()` and `_log_execution()` replaced with debug logging
+- Unhandled `OSError`/`UnicodeDecodeError` in `read_daily_log()` now caught gracefully
+- Magic numbers `temperature=0.7` / `max_output_tokens=4096` extracted to named constants
+- Unused imports removed (`BackendName`, `STRICTNESS_ORDER`)
+- Unused variable removed (`hard_passed`)
+- CHANGELOG accuracy: corrected to 33 PRs and 7 validators
+
+### Stats
+
+- Validators: 5 → 7 (added yaml, code)
+- Tests: 1202 → 1257 (+55 new)
+- Files changed: 11
+
 ## [1.0.0] — 2025-07-16
 
 First stable release. Eight engineering phases, 33 pull requests, 1202+ tests.
