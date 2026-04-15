@@ -869,6 +869,41 @@ def prune(
         console.print(f"  Skipped    : {result.skipped_files} non-log files")
 
 
+@logs_app.command()
+def rotate(
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Show what would change without changing."),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Rotate old decision log files (compress 7d+, delete 90d+)."""
+    import dataclasses
+    import json as json_mod
+    from datetime import date
+
+    from interceptor.constants import LOG_DIR
+    from interceptor.observability.log_rotate import rotate_logs
+
+    result = rotate_logs(LOG_DIR, date.today(), dry_run=dry_run)
+
+    if json_output:
+        print(json_mod.dumps(dataclasses.asdict(result), indent=2))
+        return
+
+    prefix = "[dim](dry run)[/dim] " if dry_run else ""
+    console.print(f"{prefix}[bold]Log rotation[/bold]")
+    console.print(f"  Scanned    : {result.files_scanned} log files")
+    console.print(f"  Compressed : {result.files_compressed}")
+    console.print(f"  Deleted    : {result.files_deleted}")
+    console.print(f"  Freed      : {result.bytes_freed} bytes")
+    if result.skipped_files:
+        console.print(f"  Skipped    : {result.skipped_files} non-log files")
+
+
 # ---------------------------------------------------------------------------
 # Stats (derived metrics)
 # ---------------------------------------------------------------------------

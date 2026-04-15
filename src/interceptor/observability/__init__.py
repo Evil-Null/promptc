@@ -12,12 +12,18 @@ from interceptor.observability.log_prune import (
     parse_log_date,
     prune_logs_before,
 )
+from interceptor.observability.log_rotate import (
+    RotationResult,
+    parse_rotatable_date,
+    rotate_logs,
+)
 from interceptor.observability.metrics import StatsSnapshot, TemplateUsage, aggregate
 from interceptor.observability.models import DecisionRecord
 
 __all__ = [
     "DecisionRecord",
     "PruneResult",
+    "RotationResult",
     "StatsSnapshot",
     "TemplateUsage",
     "aggregate",
@@ -26,6 +32,8 @@ __all__ = [
     "get_log_dir",
     "log_decision",
     "parse_log_date",
+    "parse_rotatable_date",
     "prune_logs_before",
     "read_daily_log",
+    "rotate_logs",
 ]
