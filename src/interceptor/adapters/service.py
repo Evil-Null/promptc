@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     import httpx
 
     from interceptor.compilation.models import CompiledPrompt
+    from interceptor.plugins.runtime import PluginRunner
 
 _ADAPTERS = {
     BackendName.CLAUDE: ClaudeAdapter(),
@@ -36,8 +37,13 @@ def _resolve_adapter(backend: str) -> tuple[BackendName, ClaudeAdapter | GptAdap
 def _evaluate_result(
     result: ExecutionResult,
     compiled_prompt: str | CompiledPrompt,
+    *,
+    plugin_runner: PluginRunner | None = None,
 ) -> None:
     """Run schema validation and gate evaluation on *result* in-place."""
+    if plugin_runner:
+        result.text = plugin_runner.run_hook("prevalidate", result.text)
+
     schema_text: str = getattr(compiled_prompt, "output_schema_text", "")
     if schema_text:
         from interceptor.validation.registry import infer_format, validate_output
@@ -55,6 +61,9 @@ def _evaluate_result(
             soft_gates=soft_gates,
             output=result.text,
         )
+
+    if plugin_runner:
+        plugin_runner.run_hook("postvalidate", result)
 
 
 class AdapterService:
@@ -107,6 +116,7 @@ class AdapterService:
         temperature: float,
         max_output_tokens: int,
         client: httpx.Client | None = None,
+        plugin_runner: PluginRunner | None = None,
     ) -> ExecutionResult:
         """Execute non-streaming request with retry on validation/gate failure.
 
@@ -122,7 +132,7 @@ class AdapterService:
             stream=False,
         )
         result = adapter.send_full(request, client=client)
-        _evaluate_result(result, compiled_prompt)
+        _evaluate_result(result, compiled_prompt, plugin_runner=plugin_runner)
 
         if not hasattr(compiled_prompt, "compiled_text"):
             return result
@@ -160,7 +170,7 @@ class AdapterService:
                 stream=False,
             )
             result = adapter.send_full(retry_request, client=client)
-            _evaluate_result(result, compiled_prompt)
+            _evaluate_result(result, compiled_prompt, plugin_runner=plugin_runner)
 
             failure = classify_failure(result.validation, result.gate_evaluation)
             if failure is None:

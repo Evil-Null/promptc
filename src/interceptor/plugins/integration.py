@@ -130,6 +130,7 @@ def execute_with_plugins(
         temperature=temperature,
         max_output_tokens=max_output_tokens,
         client=client,
+        plugin_runner=runner,
     )
 
     result = runner.run_hook("postreceive", result)
