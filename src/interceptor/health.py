@@ -147,3 +147,58 @@ def check_routing_valid() -> HealthCheckResult:
         status="warn",
         message=f"Trigger collisions: {'; '.join(detail_parts)}",
     )
+
+
+def check_compilation_valid() -> HealthCheckResult:
+    """Warm all built-in templates through all 5 compression levels.
+
+    Verifies that the assembler succeeds, the compiled prompt is non-empty,
+    user-input delimiters are present, and the token estimate is positive.
+    """
+    from interceptor.compilation.assembler import (
+        USER_INPUT_END,
+        USER_INPUT_START,
+        assemble_compiled_prompt,
+    )
+    from interceptor.compilation.models import COMPRESSION_ORDER
+    from interceptor.template_registry import TemplateRegistry
+
+    registry = TemplateRegistry.load_all()
+    templates = registry.all_templates()
+    test_input = "health-check probe"
+    failures: list[str] = []
+
+    for tpl in templates:
+        for level in COMPRESSION_ORDER:
+            try:
+                result = assemble_compiled_prompt(
+                    template=tpl,
+                    raw_input=test_input,
+                    compression_level=level,
+                )
+            except Exception as exc:
+                failures.append(f"{tpl.meta.name}/{level}: {exc}")
+                continue
+
+            if not result.compiled_text:
+                failures.append(f"{tpl.meta.name}/{level}: empty compiled text")
+            elif USER_INPUT_START not in result.compiled_text:
+                failures.append(f"{tpl.meta.name}/{level}: missing start delimiter")
+            elif USER_INPUT_END not in result.compiled_text:
+                failures.append(f"{tpl.meta.name}/{level}: missing end delimiter")
+            elif result.token_count_estimate <= 0:
+                failures.append(f"{tpl.meta.name}/{level}: token estimate <= 0")
+
+    if failures:
+        return HealthCheckResult(
+            name="compilation_valid",
+            status="fail",
+            message=f"Compilation failures: {'; '.join(failures[:5])}",
+        )
+
+    total_checks = len(templates) * len(COMPRESSION_ORDER)
+    return HealthCheckResult(
+        name="compilation_valid",
+        status="pass",
+        message=f"All {total_checks} template×level combinations compile OK.",
+    )

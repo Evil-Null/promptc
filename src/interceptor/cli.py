@@ -14,6 +14,7 @@ from rich.table import Table
 from interceptor.constants import VERSION
 from interceptor.health import (
     HealthCheckResult,
+    check_compilation_valid,
     check_config_valid,
     check_routing_valid,
     check_templates_valid,
@@ -35,6 +36,7 @@ _HEALTH_CHECKS: dict[str, Callable[..., HealthCheckResult]] = {
     "config_valid": check_config_valid,
     "templates_valid": check_templates_valid,
     "routing_valid": check_routing_valid,
+    "compilation_valid": check_compilation_valid,
 }
 
 _STATUS_STYLE: dict[str, str] = {
@@ -216,6 +218,78 @@ def route_cmd(
             console.print(f"  {name:<20} {bar}  {score:.2f}")
 
     console.print("[dim]No template applied — dry-run only[/dim]")
+
+
+@app.command(name="compile")
+def compile_cmd(
+    text: str = typer.Argument(help="Raw user input to compile."),
+    template: Annotated[
+        str,
+        typer.Option("--template", "-t", help="Template name (required)."),
+    ] = ...,
+    max_tokens: Annotated[
+        int,
+        typer.Option("--max-tokens", help="Token budget limit."),
+    ] = 8192,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Dry-run prompt compilation — template + input → compiled prompt."""
+    import json as json_mod
+
+    from interceptor.compilation.assembler import compile_prompt
+    from interceptor.compilation.cache import CompiledTemplateCache
+    from interceptor.template_registry import TemplateRegistry
+
+    registry = TemplateRegistry.load_all()
+    tpl = registry.get(template)
+    if tpl is None:
+        console.print(f"[red]Error: unknown template {template!r}[/red]")
+        raise typer.Exit(code=1)
+
+    cache = CompiledTemplateCache()
+    cache.warm_template(tpl)
+
+    compiled, budget = compile_prompt(
+        template=tpl,
+        raw_input=text,
+        max_tokens=max_tokens,
+        cache=cache,
+    )
+
+    if json_output:
+        data = {
+            "template_name": compiled.template_name,
+            "compression_level": compiled.compression_level.value,
+            "token_count_estimate": compiled.token_count_estimate,
+            "fits": budget.fits,
+            "compiled_text": compiled.compiled_text,
+        }
+        print(json_mod.dumps(data, indent=2, ensure_ascii=False))
+        return
+
+    # Rich panel with compiled text.
+    from rich.panel import Panel
+
+    console.print(
+        Panel(compiled.compiled_text, title="Compiled Prompt", border_style="green")
+    )
+
+    # Metadata table.
+    table = Table(title="Compilation Metadata", show_lines=True)
+    table.add_column("Field", style="bold")
+    table.add_column("Value")
+    table.add_row("Template", compiled.template_name)
+    table.add_row("Compression Level", compiled.compression_level.value)
+    table.add_row("Estimated Tokens", str(compiled.token_count_estimate))
+    table.add_row("Budget Fits", "✅ yes" if budget.fits else "❌ no")
+    table.add_row("Reserve Tokens", str(budget.reserve_tokens))
+    table.add_row("Available System Tokens", str(budget.available_system_tokens))
+    console.print(table)
+
+    console.print("[dim]Dry-run only — no backend calls made[/dim]")
 
 
 def main() -> None:
