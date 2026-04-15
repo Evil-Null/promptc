@@ -812,7 +812,7 @@ def logs(
         return
 
     import json as json_mod
-    from datetime import date
+    from datetime import datetime, timezone
 
     from interceptor.observability.decision_log import read_daily_log
 
@@ -822,14 +822,14 @@ def logs(
 
     if json_output:
         print(json_mod.dumps({
-            "date": date.today().isoformat(),
+            "date": datetime.now(timezone.utc).date().isoformat(),
             "total": total,
             "showing": len(recent),
             "entries": recent,
         }, indent=2, ensure_ascii=False))
         return
 
-    console.print(f"[bold]Decision log — {date.today().isoformat()}[/bold]")
+    console.print(f"[bold]Decision log — {datetime.now(timezone.utc).date().isoformat()}[/bold]")
     console.print(f"Total entries: {total}")
 
     if not records:
@@ -1115,7 +1115,7 @@ def stats(
 ) -> None:
     """Show derived metrics for a day's decision log."""
     import json as json_mod
-    from datetime import date
+    from datetime import date, datetime, timezone
 
     from interceptor.observability.decision_log import read_daily_log
     from interceptor.observability.metrics import aggregate
@@ -1133,7 +1133,7 @@ def stats(
 
     if json_output:
         print(json_mod.dumps({
-            "date": (day or date.today()).isoformat(),
+            "date": (day or datetime.now(timezone.utc).date()).isoformat(),
             "total_decisions": snap.total_decisions,
             "success_count": snap.success_count,
             "error_count": snap.error_count,
@@ -1147,7 +1147,7 @@ def stats(
         }, indent=2, ensure_ascii=False))
         return
 
-    label = (day or date.today()).isoformat()
+    label = (day or datetime.now(timezone.utc).date()).isoformat()
     console.print(f"[bold]Stats — {label}[/bold]")
 
     if snap.total_decisions == 0:
