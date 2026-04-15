@@ -750,12 +750,16 @@ def run(
 
 
 # ---------------------------------------------------------------------------
-# Logs (decision log reader)
+# Logs (decision log reader + prune)
 # ---------------------------------------------------------------------------
 
+logs_app = typer.Typer(name="logs", help="Decision log commands.")
+app.add_typer(logs_app)
 
-@app.command()
+
+@logs_app.callback(invoke_without_command=True)
 def logs(
+    ctx: typer.Context,
     count: Annotated[
         int,
         typer.Option("--count", "-n", help="Number of recent entries."),
@@ -766,6 +770,9 @@ def logs(
     ] = False,
 ) -> None:
     """Show today's decision log entries."""
+    if ctx.invoked_subcommand is not None:
+        return
+
     import json as json_mod
     from datetime import date
 
@@ -815,6 +822,51 @@ def logs(
         table.add_row(ts, tpl, bk, f"[{style}]{out}[/{style}]", tokens, retry_str)
 
     console.print(table)
+
+
+@logs_app.command()
+def prune(
+    before: Annotated[
+        str,
+        typer.Option("--before", help="Prune logs strictly older than YYYY-MM-DD."),
+    ],
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Show what would be deleted without deleting."),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Prune old decision log files."""
+    import json as json_mod
+    from datetime import date
+
+    from interceptor.constants import LOG_DIR
+    from interceptor.observability.log_prune import prune_logs_before
+
+    try:
+        cutoff = date.fromisoformat(before)
+    except ValueError:
+        console.print(f"[red]Invalid date:[/red] {before}")
+        raise typer.Exit(code=1)
+
+    result = prune_logs_before(LOG_DIR, cutoff, dry_run=dry_run)
+
+    if json_output:
+        import dataclasses
+
+        print(json_mod.dumps(dataclasses.asdict(result), indent=2))
+        return
+
+    prefix = "[dim](dry run)[/dim] " if dry_run else ""
+    console.print(f"{prefix}[bold]Log prune — before {before}[/bold]")
+    console.print(f"  Scanned    : {result.files_scanned} log files")
+    console.print(f"  Deleted    : {result.files_deleted}")
+    console.print(f"  Freed      : {result.bytes_freed} bytes")
+    if result.skipped_files:
+        console.print(f"  Skipped    : {result.skipped_files} non-log files")
 
 
 # ---------------------------------------------------------------------------
