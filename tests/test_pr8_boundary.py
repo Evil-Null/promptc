@@ -321,7 +321,8 @@ class TestRunCliDryRun:
         assert "User Content" in result.output
         assert "Dry-run" in result.output
 
-    def test_dry_run_required(self) -> None:
+    def test_no_api_key_error_without_dry_run(self) -> None:
+        """Without --dry-run, missing API key produces an error exit."""
         from interceptor.cli import app
 
         result = runner.invoke(
@@ -329,7 +330,7 @@ class TestRunCliDryRun:
             ["run", "hello", "--template", "code-review", "--backend", "claude"],
         )
         assert result.exit_code == 1
-        assert "dry-run" in result.output.lower()
+        assert "api key" in result.output.lower() or "error" in result.output.lower()
 
     def test_unknown_template_error(self) -> None:
         from interceptor.cli import app

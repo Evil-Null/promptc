@@ -9,6 +9,7 @@ from interceptor.adapters.gpt import GptAdapter
 from interceptor.adapters.models import (
     AdaptedRequest,
     BackendName,
+    ExecutionResult,
     StreamEvent,
 )
 from interceptor.adapters.registry import get_backend_capability
@@ -71,3 +72,22 @@ class AdapterService:
         if stream:
             return adapter.stream(request, client=client)
         return adapter.send(request, client=client)
+
+    def execute_full(
+        self,
+        *,
+        backend: str,
+        compiled_prompt: str | CompiledPrompt,
+        temperature: float,
+        max_output_tokens: int,
+        client: object | None = None,
+    ) -> ExecutionResult:
+        """Execute non-streaming request and return normalized result."""
+        _, adapter = _resolve_adapter(backend)
+        request = adapter.adapt(
+            compiled_prompt=compiled_prompt,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            stream=False,
+        )
+        return adapter.send_full(request, client=client)

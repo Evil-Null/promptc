@@ -56,7 +56,8 @@ class TestGptAdapt:
 
 
 class TestGptSend:
-    def test_no_client_raises(self) -> None:
+    def test_no_api_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         adapter = GptAdapter()
         req = adapter.adapt(
             compiled_prompt="x",
@@ -64,10 +65,27 @@ class TestGptSend:
             max_output_tokens=1024,
             stream=False,
         )
-        with pytest.raises(RuntimeError, match="requires a client"):
+        from interceptor.adapters.errors import MissingApiKeyError
+
+        with pytest.raises(MissingApiKeyError, match="OPENAI_API_KEY"):
             adapter.send(req)
 
-    def test_send_with_mock_client(self) -> None:
+    def test_send_with_mock_transport(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        import httpx
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "choices": [
+                        {"message": {"content": "hello from gpt"}, "finish_reason": "stop"}
+                    ],
+                    "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+                },
+            )
+
+        client = httpx.Client(transport=httpx.MockTransport(handler))
         adapter = GptAdapter()
         req = adapter.adapt(
             compiled_prompt="x",
@@ -75,25 +93,8 @@ class TestGptSend:
             max_output_tokens=1024,
             stream=False,
         )
-
-        @dataclass
-        class MockClient:
-            def send(self, request: AdaptedRequest) -> str:
-                return "gpt response"
-
-        result = adapter.send(req, client=MockClient())
-        assert result == "gpt response"
-
-    def test_send_invalid_client_raises(self) -> None:
-        adapter = GptAdapter()
-        req = adapter.adapt(
-            compiled_prompt="x",
-            temperature=0.7,
-            max_output_tokens=1024,
-            stream=False,
-        )
-        with pytest.raises(TypeError, match="must implement send"):
-            adapter.send(req, client=object())
+        result = adapter.send(req, client=client)
+        assert result == "hello from gpt"
 
 
 class TestGptStream:

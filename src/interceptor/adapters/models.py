@@ -73,3 +73,14 @@ class StreamEvent:
     type: str
     text: str = ""
     done: bool = False
+
+
+@dataclass(slots=True)
+class ExecutionResult:
+    """Normalized result from a backend send execution."""
+
+    backend: str
+    text: str
+    finish_reason: str | None = None
+    usage_input_tokens: int | None = None
+    usage_output_tokens: int | None = None

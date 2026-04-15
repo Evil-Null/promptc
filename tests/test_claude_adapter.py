@@ -56,7 +56,8 @@ class TestClaudeAdapt:
 
 
 class TestClaudeSend:
-    def test_no_client_raises(self) -> None:
+    def test_no_api_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         adapter = ClaudeAdapter()
         req = adapter.adapt(
             compiled_prompt="x",
@@ -64,10 +65,26 @@ class TestClaudeSend:
             max_output_tokens=1024,
             stream=False,
         )
-        with pytest.raises(RuntimeError, match="requires a client"):
+        from interceptor.adapters.errors import MissingApiKeyError
+
+        with pytest.raises(MissingApiKeyError, match="ANTHROPIC_API_KEY"):
             adapter.send(req)
 
-    def test_send_with_mock_client(self) -> None:
+    def test_send_with_mock_transport(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        import httpx
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "content": [{"type": "text", "text": "hello from claude"}],
+                    "stop_reason": "end_turn",
+                    "usage": {"input_tokens": 10, "output_tokens": 5},
+                },
+            )
+
+        client = httpx.Client(transport=httpx.MockTransport(handler))
         adapter = ClaudeAdapter()
         req = adapter.adapt(
             compiled_prompt="x",
@@ -75,25 +92,8 @@ class TestClaudeSend:
             max_output_tokens=1024,
             stream=False,
         )
-
-        @dataclass
-        class MockClient:
-            def send(self, request: AdaptedRequest) -> str:
-                return "mock response"
-
-        result = adapter.send(req, client=MockClient())
-        assert result == "mock response"
-
-    def test_send_invalid_client_raises(self) -> None:
-        adapter = ClaudeAdapter()
-        req = adapter.adapt(
-            compiled_prompt="x",
-            temperature=0.7,
-            max_output_tokens=1024,
-            stream=False,
-        )
-        with pytest.raises(TypeError, match="must implement send"):
-            adapter.send(req, client=object())
+        result = adapter.send(req, client=client)
+        assert result == "hello from claude"
 
 
 class TestClaudeStream:

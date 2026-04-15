@@ -1,9 +1,15 @@
 """Backend adapters — capability registry, adaptation, and transport."""
 
+from interceptor.adapters.errors import (
+    BackendRequestError,
+    BackendResponseParseError,
+    MissingApiKeyError,
+)
 from interceptor.adapters.models import (
     AdaptedRequest,
     BackendCapability,
     BackendName,
+    ExecutionResult,
     StreamEvent,
     TemperatureRange,
 )
@@ -23,8 +29,12 @@ __all__ = [
     "AdapterService",
     "BackendCapability",
     "BackendName",
+    "BackendRequestError",
+    "BackendResponseParseError",
     "ClaudeAdapter",
+    "ExecutionResult",
     "GptAdapter",
+    "MissingApiKeyError",
     "StreamEvent",
     "TemperatureRange",
     "extract_system_text",

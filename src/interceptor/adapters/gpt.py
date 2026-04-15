@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Iterable
 from interceptor.adapters.models import (
     AdaptedRequest,
     BackendName,
+    ExecutionResult,
     StreamEvent,
 )
 from interceptor.adapters.prompt_extract import extract_system_text, extract_user_text
@@ -58,15 +59,17 @@ class GptAdapter:
     def send(
         self, request: AdaptedRequest, *, client: object | None = None
     ) -> str:
-        if client is None:
-            raise RuntimeError(
-                "GptAdapter.send() requires a client (no live calls in V1)"
-            )
-        send_fn = getattr(client, "send", None)
-        if send_fn is None or not callable(send_fn):
-            raise TypeError("client must implement send(request) -> str")
-        result: str = send_fn(request)
-        return result
+        from interceptor.adapters.transport import send_gpt
+
+        result = send_gpt(request.payload, client=client)
+        return result.text
+
+    def send_full(
+        self, request: AdaptedRequest, *, client: object | None = None
+    ) -> ExecutionResult:
+        from interceptor.adapters.transport import send_gpt
+
+        return send_gpt(request.payload, client=client)
 
     def stream(
         self, request: AdaptedRequest, *, client: object | None = None

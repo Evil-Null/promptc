@@ -47,21 +47,29 @@ class TestAdaptRequest:
 
 
 class TestExecute:
-    def test_execute_send_mode(self) -> None:
+    def test_execute_send_mode(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        import httpx
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "content": [{"type": "text", "text": "sync result"}],
+                    "stop_reason": "end_turn",
+                    "usage": {"input_tokens": 10, "output_tokens": 5},
+                },
+            )
+
+        client = httpx.Client(transport=httpx.MockTransport(handler))
         svc = AdapterService()
-
-        @dataclass
-        class MockClient:
-            def send(self, request: AdaptedRequest) -> str:
-                return "sync result"
-
         result = svc.execute(
             backend="claude",
             compiled_prompt="test",
             temperature=0.7,
             max_output_tokens=1024,
             stream=False,
-            client=MockClient(),
+            client=client,
         )
         assert result == "sync result"
 
@@ -86,9 +94,12 @@ class TestExecute:
         assert len(events) == 2
         assert events[-1].done is True
 
-    def test_execute_no_client_raises(self) -> None:
+    def test_execute_no_api_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        from interceptor.adapters.errors import MissingApiKeyError
+
         svc = AdapterService()
-        with pytest.raises(RuntimeError, match="requires a client"):
+        with pytest.raises(MissingApiKeyError):
             svc.execute(
                 backend="claude",
                 compiled_prompt="test",

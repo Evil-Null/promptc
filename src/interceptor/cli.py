@@ -439,10 +439,6 @@ def run(
     from interceptor.routing.router import route as do_route
     from interceptor.template_registry import TemplateRegistry
 
-    if not dry_run:
-        console.print("[red]Error:[/red] Only --dry-run is supported in V1.")
-        raise typer.Exit(code=1)
-
     config = load_config()
     registry = TemplateRegistry.load_all()
 
@@ -469,8 +465,41 @@ def run(
         cap = select_backend()
         backend_name = cap.name.value
 
-    # Adapt.
     service = AdapterService()
+
+    if not dry_run:
+        # Real execution path — send to backend API.
+        try:
+            result = service.execute_full(
+                backend=backend_name,
+                compiled_prompt=compiled,
+                temperature=0.7,
+                max_output_tokens=4096,
+            )
+        except Exception as exc:
+            console.print(f"[red]Error:[/red] {exc}")
+            raise typer.Exit(code=1) from exc
+
+        if json_output:
+            data = {
+                "template": template,
+                "backend": result.backend,
+                "finish_reason": result.finish_reason,
+                "usage_input_tokens": result.usage_input_tokens,
+                "usage_output_tokens": result.usage_output_tokens,
+                "text": result.text,
+            }
+            print(json_mod.dumps(data, indent=2, ensure_ascii=False))
+            return
+
+        console.print(result.text)
+        console.print(
+            f"\n[dim]{result.backend} · {result.finish_reason} · "
+            f"in={result.usage_input_tokens} out={result.usage_output_tokens}[/dim]"
+        )
+        return
+
+    # Dry-run path — adapt and display without sending.
     request = service.adapt_request(
         backend=backend_name,
         compiled_prompt=compiled,
