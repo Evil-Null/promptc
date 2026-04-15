@@ -15,6 +15,7 @@ from interceptor.constants import VERSION
 from interceptor.health import (
     HealthCheckResult,
     check_config_valid,
+    check_routing_valid,
     check_templates_valid,
 )
 
@@ -33,6 +34,7 @@ console = Console()
 _HEALTH_CHECKS: dict[str, Callable[..., HealthCheckResult]] = {
     "config_valid": check_config_valid,
     "templates_valid": check_templates_valid,
+    "routing_valid": check_routing_valid,
 }
 
 _STATUS_STYLE: dict[str, str] = {
@@ -135,6 +137,85 @@ def templates() -> None:
         )
 
     console.print(table)
+
+
+@app.command(name="route")
+def route_cmd(
+    text: str = typer.Argument(help="Input text to route."),
+    template: Annotated[
+        Optional[str],
+        typer.Option("--template", "-t", help="Explicit template name."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+    file: Annotated[
+        Optional[str],
+        typer.Option("--file", "-f", help="File path for project context."),
+    ] = None,
+) -> None:
+    """Dry-run routing decision for input text."""
+    from interceptor.config import load_config
+    from interceptor.routing.models import RouteZone
+    from interceptor.routing.router import ProjectContext
+    from interceptor.routing.router import route as do_route
+    from interceptor.template_registry import TemplateRegistry
+
+    config = load_config()
+    registry = TemplateRegistry.load_all()
+
+    context = None
+    if file:
+        ext = Path(file).suffix.lower() or None
+        context = ProjectContext(file_path=file, file_extension=ext)
+
+    try:
+        result = do_route(
+            text,
+            registry,
+            config,
+            context=context,
+            explicit_template=template,
+        )
+    except ValueError as exc:
+        console.print(f"[red]Error: {exc}[/red]")
+        raise typer.Exit(code=0) from None
+
+    if json_output:
+        console.print(result.model_dump_json(indent=2))
+        return
+
+    if result.zone == RouteZone.PASSTHROUGH:
+        console.print(
+            "[yellow]⚠ No template matched. "
+            "Input would be sent as raw prompt.[/yellow]"
+        )
+        console.print(
+            "[dim]Tip: run `mycli templates` to browse available templates[/dim]"
+        )
+        return
+
+    table = Table(title="Routing Decision", show_lines=True)
+    table.add_column("Field", style="bold")
+    table.add_column("Value")
+    table.add_row("Template", result.template_name or "—")
+    table.add_row("Zone", result.zone.value)
+    table.add_row("Method", result.method.value)
+    table.add_row("Confidence", f"{result.confidence:.4f}")
+    table.add_row("Runner-up", result.runner_up or "—")
+    console.print(table)
+
+    if result.scores:
+        console.print("\n[bold]Top scores:[/bold]")
+        top = sorted(result.scores.items(), key=lambda x: x[1], reverse=True)[:5]
+        bar_width = 10
+        for name, score in top:
+            filled = int(score * bar_width)
+            bar = "█" * filled + "░" * (bar_width - filled)
+            console.print(f"  {name:<20} {bar}  {score:.2f}")
+
+    console.print("[dim]No template applied — dry-run only[/dim]")
 
 
 def main() -> None:

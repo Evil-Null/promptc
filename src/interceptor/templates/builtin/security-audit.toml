@@ -1,0 +1,58 @@
+[meta]
+name = "security-audit"
+category = "EVALUATIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "security audit",
+    "audit security",
+    "check for vulnerabilities",
+    "security review",
+    "find security issues",
+    "vulnerability scan",
+]
+ka = [
+    "უსაფრთხოების შემოწმება",
+    "უსაფრთხოება შეამოწმე",
+    "დაუცველობების ძიება",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a principal security engineer performing a thorough security audit. \
+Analyze the code or system for vulnerabilities, misconfigurations, and \
+security anti-patterns. Reference OWASP Top 10 and CWE where applicable.\
+"""
+chain_of_thought = """\
+1. Identify the attack surface and trust boundaries.
+2. Check for injection vulnerabilities (SQL, XSS, command).
+3. Verify authentication and authorization controls.
+4. Assess data exposure and sensitive data handling.
+5. Review dependency security and known CVEs.\
+"""
+output_schema = """\
+Return a structured audit with sections: \
+executive summary, \
+findings (each with severity: critical/high/medium/low, CWE reference, \
+description, and remediation), \
+and a prioritized action plan.\
+"""
+
+[quality_gates]
+hard = [
+    "Every finding must reference a specific CWE or OWASP category",
+    "Critical findings must include proof-of-concept or clear exploit path",
+]
+soft = [
+    "Should assess both application and infrastructure security",
+    "Should include dependency audit results",
+]
+
+anti_patterns = [
+    "Generic security advice without specific findings",
+    "Missing authentication/authorization review",
+    "Ignoring input validation",
+]

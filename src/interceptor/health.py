@@ -106,3 +106,44 @@ def check_templates_valid() -> HealthCheckResult:
         status="pass",
         message=f"{total} template(s) loaded successfully.",
     )
+
+
+def check_routing_valid() -> HealthCheckResult:
+    """Verify no STRONG trigger phrase is duplicated across templates.
+
+    A "STRONG trigger" is any trigger phrase with ``len >= 6`` chars.
+    Collisions are reported as *warn* (informational, not fatal).
+    """
+    from interceptor.template_registry import TemplateRegistry
+
+    registry = TemplateRegistry.load_all()
+    templates = registry.all_templates()
+
+    trigger_owners: dict[str, list[str]] = {}
+    for t in templates:
+        for phrase in t.triggers.en + t.triggers.ka:
+            norm = phrase.strip().lower()
+            if len(norm) >= 6:
+                trigger_owners.setdefault(norm, []).append(t.meta.name)
+
+    collisions = {
+        trigger: owners
+        for trigger, owners in trigger_owners.items()
+        if len(owners) >= 2
+    }
+
+    if not collisions:
+        return HealthCheckResult(
+            name="routing_valid",
+            status="pass",
+            message="No trigger collisions detected.",
+        )
+
+    detail_parts = [
+        f"{trg!r} ({', '.join(owners)})" for trg, owners in collisions.items()
+    ]
+    return HealthCheckResult(
+        name="routing_valid",
+        status="warn",
+        message=f"Trigger collisions: {'; '.join(detail_parts)}",
+    )
