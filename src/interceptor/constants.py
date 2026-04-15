@@ -29,3 +29,5 @@ LOG_DIR: Path = DATA_DIR / "logs"
 
 TEMPLATES_BUILTIN_DIR: Path = Path(__file__).parent / "templates" / "builtin"
 TEMPLATES_CUSTOM_DIR: Path = CONFIG_DIR / "templates" / "custom"
+
+PLUGINS_DIR: Path = CONFIG_DIR / "plugins"

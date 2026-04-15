@@ -1136,6 +1136,65 @@ def stats(
             console.print(f"    {t.count:>4}× {t.name}")
 
 
+@app.command()
+def plugins(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """List discovered plugins."""
+    from interceptor.constants import PLUGINS_DIR
+    from interceptor.plugins.registry import PluginRegistry
+
+    registry = PluginRegistry.load_all(PLUGINS_DIR)
+
+    for w in registry.warnings:
+        console.print(f"[yellow]⚠️  {w}[/yellow]", highlight=False)
+
+    all_plugins = registry.list_all()
+
+    if json_output:
+        import json as json_mod
+
+        data = [
+            {
+                "name": p.manifest.name,
+                "version": p.manifest.version,
+                "description": p.manifest.description,
+                "hooks": p.manifest.hooks,
+                "api_version": p.manifest.api_version,
+                "path": str(p.path),
+            }
+            for p in all_plugins
+        ]
+        print(json_mod.dumps(data, indent=2, ensure_ascii=False))
+        return
+
+    if not all_plugins:
+        console.print("[dim]No plugins discovered.[/dim]")
+        return
+
+    table = Table(show_lines=False)
+    table.add_column("Name")
+    table.add_column("Version")
+    table.add_column("Hooks", justify="right")
+    table.add_column("API")
+    table.add_column("Path", style="dim")
+
+    for p in all_plugins:
+        table.add_row(
+            p.manifest.name,
+            p.manifest.version,
+            str(len(p.manifest.hooks)),
+            p.manifest.api_version,
+            str(p.path),
+        )
+
+    console.print(f"[bold]Plugins[/bold] ({registry.count()} discovered)")
+    console.print(table)
+
+
 def main() -> None:
     """Console script entry point."""
     app()
