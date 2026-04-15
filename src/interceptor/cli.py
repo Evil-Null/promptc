@@ -241,8 +241,8 @@ def compile_cmd(
     """Dry-run prompt compilation — template + input → compiled prompt."""
     import json as json_mod
 
-    from interceptor.compilation.assembler import compile_prompt
     from interceptor.compilation.cache import CompiledTemplateCache
+    from interceptor.plugins.integration import compile_with_plugins
     from interceptor.template_registry import TemplateRegistry
 
     registry = TemplateRegistry.load_all()
@@ -254,7 +254,7 @@ def compile_cmd(
     cache = CompiledTemplateCache()
     cache.warm_template(tpl)
 
-    compiled, budget = compile_prompt(
+    compiled, budget = compile_with_plugins(
         template=tpl,
         raw_input=text,
         max_tokens=max_tokens,
@@ -557,8 +557,8 @@ def run(
 
     from interceptor.adapters.selector import select_backend
     from interceptor.adapters.service import AdapterService
-    from interceptor.compilation.assembler import compile_prompt
     from interceptor.config import load_config
+    from interceptor.plugins.integration import compile_with_plugins
     from interceptor.routing.router import route as do_route
     from interceptor.template_registry import TemplateRegistry
 
@@ -583,7 +583,7 @@ def run(
         template = tpl.meta.name
 
     # Compile.
-    compiled, _budget = compile_prompt(template=tpl, raw_input=text)
+    compiled, _budget = compile_with_plugins(template=tpl, raw_input=text)
 
     # Select backend.
     if backend:
