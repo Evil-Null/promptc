@@ -617,10 +617,16 @@ def run(
             raise typer.Exit(code=1)
     else:
         decision = route_with_plugins(text, registry, config)
-        if decision.template is None:
+        if decision.template_name is None:
             console.print("[red]Error:[/red] No template matched.")
             raise typer.Exit(code=1)
-        tpl = decision.template
+        tpl = registry.get(decision.template_name)
+        if tpl is None:
+            console.print(
+                f"[red]Error:[/red] Routed to {decision.template_name!r} "
+                "but template not found in registry."
+            )
+            raise typer.Exit(code=1)
         template = tpl.meta.name
 
     # Compile.
@@ -739,7 +745,9 @@ def run(
         }
         if result.validation:
             data["validation"] = {
-                "status": result.validation.status.value,
+                "status": result.validation.status.value
+                if hasattr(result.validation.status, "value")
+                else str(result.validation.status),
                 "score": result.validation.score,
                 "validator": result.validation.validator_name,
                 "issues": [

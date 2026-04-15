@@ -179,7 +179,7 @@ class FreeformValidator(BaseValidator):
 
     def validate(self, text: str, output_schema: str) -> ValidationResult:
         return ValidationResult(
-            status="pass",
+            status=ValidationStatus.PASS,
             score=1.0,
             validator_name=self.name,
         )
