@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from interceptor.constants import LOG_DIR
@@ -22,7 +22,7 @@ def get_daily_log_path(
     day: date | None = None, *, log_dir: Path | None = None
 ) -> Path:
     """Canonical JSONL path for *day* (defaults to today)."""
-    return get_log_dir(log_dir) / f"decisions-{(day or date.today()).isoformat()}.jsonl"
+    return get_log_dir(log_dir) / f"decisions-{(day or datetime.now(timezone.utc).date()).isoformat()}.jsonl"
 
 
 def log_decision(
@@ -45,7 +45,7 @@ def read_daily_log(
 ) -> list[dict]:
     """Read all records from the daily log.  Returns ``[]`` if missing."""
     d = log_dir or LOG_DIR
-    path = d / f"decisions-{(day or date.today()).isoformat()}.jsonl"
+    path = d / f"decisions-{(day or datetime.now(timezone.utc).date()).isoformat()}.jsonl"
     if not path.exists():
         return []
     records: list[dict] = []

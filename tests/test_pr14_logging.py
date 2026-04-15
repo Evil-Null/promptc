@@ -105,7 +105,7 @@ class TestLogPath:
 
     def test_daily_path_defaults_to_today(self, tmp_path):
         p = get_daily_log_path(log_dir=tmp_path)
-        assert date.today().isoformat() in p.name
+        assert datetime.now(timezone.utc).date().isoformat() in p.name
 
     def test_path_has_jsonl_extension(self, tmp_path):
         p = get_daily_log_path(log_dir=tmp_path)
@@ -549,19 +549,33 @@ class TestReadDailyLog:
         assert records == []
 
     def test_empty_file(self, tmp_path):
-        today = date.today().isoformat()
-        (tmp_path / f"decisions-{today}.jsonl").write_text("")
+        utc_today = datetime.now(timezone.utc).date().isoformat()
+        (tmp_path / f"decisions-{utc_today}.jsonl").write_text("")
         records = read_daily_log(log_dir=tmp_path)
         assert records == []
 
     def test_malformed_lines_skipped(self, tmp_path):
-        today = date.today().isoformat()
+        utc_today = datetime.now(timezone.utc).date().isoformat()
         content = '{"input_hash":"ok"}\nBAD_JSON\n{"input_hash":"also_ok"}\n'
-        (tmp_path / f"decisions-{today}.jsonl").write_text(content)
+        (tmp_path / f"decisions-{utc_today}.jsonl").write_text(content)
         records = read_daily_log(log_dir=tmp_path)
         assert len(records) == 2
         assert records[0]["input_hash"] == "ok"
         assert records[1]["input_hash"] == "also_ok"
+
+    def test_write_read_roundtrip_utc_consistent(self, tmp_path):
+        """Write via log_decision, read via read_daily_log — date must match."""
+        rec = DecisionRecord(input_hash="roundtrip_test", selected_template="t")
+        log_decision(rec, log_dir=tmp_path)
+        records = read_daily_log(log_dir=tmp_path)
+        assert len(records) == 1
+        assert records[0]["input_hash"] == "roundtrip_test"
+
+    def test_read_uses_utc_not_local(self, tmp_path):
+        """Verify read path filename uses UTC date, not local date."""
+        utc_date = datetime.now(timezone.utc).date()
+        path = get_daily_log_path(log_dir=tmp_path)
+        assert utc_date.isoformat() in path.name
 
 
 # ── L: Config observability ──────────────────────────────────────────
