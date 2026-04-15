@@ -17,6 +17,7 @@ from interceptor.health import (
     check_backends_valid,
     check_compilation_valid,
     check_config_valid,
+    check_plugin_integrity,
     check_routing_valid,
     check_templates_valid,
 )
@@ -39,6 +40,7 @@ _HEALTH_CHECKS: dict[str, Callable[..., HealthCheckResult]] = {
     "routing_valid": check_routing_valid,
     "compilation_valid": check_compilation_valid,
     "backends_valid": check_backends_valid,
+    "plugin_integrity": check_plugin_integrity,
 }
 
 _STATUS_STYLE: dict[str, str] = {
@@ -68,6 +70,10 @@ def health(
         bool,
         typer.Option("--strict", help="Exit 1 on any warn or fail (CI mode)."),
     ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
 ) -> None:
     """Run system health checks."""
     if check is not None:
@@ -79,7 +85,10 @@ def health(
     else:
         results = [fn() for fn in _HEALTH_CHECKS.values()]
 
-    _render_results(results)
+    if json_output:
+        _render_results_json(results)
+    else:
+        _render_results(results)
     _exit_on_status(results, strict=strict)
 
 
@@ -98,6 +107,29 @@ def _render_results(results: list[HealthCheckResult]) -> None:
         table.add_row(r.name, _STATUS_STYLE.get(r.status, r.status), r.message)
 
     console.print(table)
+
+
+def _render_results_json(results: list[HealthCheckResult]) -> None:
+    """Render health check results as JSON for machine consumption."""
+    import json as json_mod
+
+    has_fail = any(r.status == "fail" for r in results)
+    has_warn = any(r.status == "warn" for r in results)
+    overall = "fail" if has_fail else ("warn" if has_warn else "pass")
+
+    data = {
+        "overall": overall,
+        "checks": [
+            {
+                "name": r.name,
+                "status": r.status,
+                "message": r.message,
+                "details": r.details,
+            }
+            for r in results
+        ],
+    }
+    print(json_mod.dumps(data, indent=2, ensure_ascii=False))
 
 
 def _exit_on_status(

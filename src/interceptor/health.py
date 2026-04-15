@@ -1,4 +1,4 @@
-"""Health check logic for config and template validation."""
+"""Health check logic for config, template, and plugin validation."""
 
 from __future__ import annotations
 
@@ -249,4 +249,93 @@ def check_backends_valid() -> HealthCheckResult:
         name="backends_valid",
         status="pass",
         message=f"All {len(capabilities)} backend(s) valid with adapters.",
+    )
+
+
+def check_plugin_integrity(plugins_dir: Path | None = None) -> HealthCheckResult:
+    """Verify plugin discovery and loading integrity.
+
+    Returns:
+        pass — no plugins present OR all plugins load successfully.
+        warn — one or more plugins failed discovery/loading (soft-fail).
+    """
+    from interceptor.constants import PLUGINS_DIR as DEFAULT_PLUGINS_DIR
+    from interceptor.plugins.discovery import discover_plugins
+    from interceptor.plugins.runtime import load_plugin
+
+    target = plugins_dir or DEFAULT_PLUGINS_DIR
+
+    if not target.is_dir():
+        return HealthCheckResult(
+            name="plugin_integrity",
+            status="pass",
+            message="No plugins directory — plugin system inactive.",
+            details={"plugins_dir": str(target), "discovered": "0", "loaded": "0"},
+        )
+
+    try:
+        discovered, disc_warnings = discover_plugins(target)
+    except Exception as exc:
+        return HealthCheckResult(
+            name="plugin_integrity",
+            status="warn",
+            message=f"Plugin discovery failed: {exc}",
+            details={"plugins_dir": str(target)},
+        )
+
+    if not discovered and not disc_warnings:
+        return HealthCheckResult(
+            name="plugin_integrity",
+            status="pass",
+            message="No plugins found.",
+            details={"plugins_dir": str(target), "discovered": "0", "loaded": "0"},
+        )
+
+    loaded_names: list[str] = []
+    failed_names: list[str] = []
+    hook_info: list[str] = []
+
+    for dp in discovered:
+        lp = load_plugin(dp)
+        if lp is None:
+            failed_names.append(dp.manifest.name)
+        else:
+            loaded_names.append(lp.name)
+            hook_info.append(f"{lp.name}({','.join(lp.hooks)})")
+
+    total = len(discovered) + len(disc_warnings)
+    loaded = len(loaded_names)
+    failed_load = len(failed_names)
+
+    details: dict[str, str] = {
+        "plugins_dir": str(target),
+        "discovered": str(len(discovered)),
+        "loaded": str(loaded),
+        "failed": str(failed_load + len(disc_warnings)),
+    }
+    if failed_names:
+        details["failed_plugins"] = ", ".join(failed_names)
+    if disc_warnings:
+        details["discovery_warnings"] = "; ".join(disc_warnings)
+    if hook_info:
+        details["hooks"] = "; ".join(hook_info)
+
+    if failed_load or disc_warnings:
+        parts: list[str] = []
+        if failed_load:
+            parts.append(f"{failed_load} failed to load ({', '.join(failed_names)})")
+        if disc_warnings:
+            parts.append(f"{len(disc_warnings)} skipped at discovery")
+        return HealthCheckResult(
+            name="plugin_integrity",
+            status="warn",
+            message=f"Degraded: {'; '.join(parts)}. {loaded} of {total} usable.",
+            details=details,
+        )
+
+    return HealthCheckResult(
+        name="plugin_integrity",
+        status="pass",
+        message=f"All {loaded} plugin(s) healthy. Hooks: {', '.join(hook_info)}.",
+        details=details,
     )
