@@ -13,6 +13,8 @@ from interceptor.adapters.models import (
 from interceptor.adapters.prompt_extract import extract_system_text, extract_user_text
 
 if TYPE_CHECKING:
+    import httpx
+
     from interceptor.compilation.models import CompiledPrompt
 
 DEFAULT_MODEL = "gpt-4o"
@@ -57,7 +59,7 @@ class GptAdapter:
         )
 
     def send(
-        self, request: AdaptedRequest, *, client: object | None = None
+        self, request: AdaptedRequest, *, client: httpx.Client | None = None
     ) -> str:
         from interceptor.adapters.transport import send_gpt
 
@@ -65,20 +67,15 @@ class GptAdapter:
         return result.text
 
     def send_full(
-        self, request: AdaptedRequest, *, client: object | None = None
+        self, request: AdaptedRequest, *, client: httpx.Client | None = None
     ) -> ExecutionResult:
         from interceptor.adapters.transport import send_gpt
 
         return send_gpt(request.payload, client=client)
 
     def stream(
-        self, request: AdaptedRequest, *, client: object | None = None
+        self, request: AdaptedRequest, *, client: httpx.Client | None = None
     ) -> Iterable[StreamEvent]:
-        if client is None:
-            raise RuntimeError(
-                "GptAdapter.stream() requires a client (no live calls in V1)"
-            )
-        stream_fn = getattr(client, "stream", None)
-        if stream_fn is None or not callable(stream_fn):
-            raise TypeError("client must implement stream(request) -> Iterable[StreamEvent]")
-        yield from stream_fn(request)
+        from interceptor.adapters.transport import stream_gpt
+
+        return stream_gpt(request.payload, client=client)

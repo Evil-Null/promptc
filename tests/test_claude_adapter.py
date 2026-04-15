@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Iterable
-
 import pytest
 
 from interceptor.adapters.claude import ClaudeAdapter, DEFAULT_MODEL
@@ -97,7 +94,8 @@ class TestClaudeSend:
 
 
 class TestClaudeStream:
-    def test_no_client_raises(self) -> None:
+    def test_no_api_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         adapter = ClaudeAdapter()
         req = adapter.adapt(
             compiled_prompt="x",
@@ -105,10 +103,34 @@ class TestClaudeStream:
             max_output_tokens=1024,
             stream=True,
         )
-        with pytest.raises(RuntimeError, match="requires a client"):
+        from interceptor.adapters.errors import MissingApiKeyError
+
+        with pytest.raises(MissingApiKeyError, match="ANTHROPIC_API_KEY"):
             list(adapter.stream(req))
 
-    def test_stream_with_mock_client(self) -> None:
+    def test_stream_with_mock_transport(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        import json
+
+        import httpx
+
+        sse_lines = [
+            'event: content_block_delta',
+            'data: ' + json.dumps({"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "hello "}}),
+            '',
+            'event: content_block_delta',
+            'data: ' + json.dumps({"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "world"}}),
+            '',
+            'event: message_delta',
+            'data: ' + json.dumps({"type": "message_delta", "delta": {"stop_reason": "end_turn"}, "usage": {"output_tokens": 5}}),
+            '',
+        ]
+        body = "\n".join(sse_lines).encode()
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, content=body, headers={"content-type": "text/event-stream"})
+
+        client = httpx.Client(transport=httpx.MockTransport(handler))
         adapter = ClaudeAdapter()
         req = adapter.adapt(
             compiled_prompt="x",
@@ -116,25 +138,8 @@ class TestClaudeStream:
             max_output_tokens=1024,
             stream=True,
         )
-
-        @dataclass
-        class MockStreamClient:
-            def stream(self, request: AdaptedRequest) -> Iterable[StreamEvent]:
-                yield StreamEvent(type="content", text="hello ")
-                yield StreamEvent(type="content", text="world")
-                yield StreamEvent(type="done", done=True)
-
-        events = list(adapter.stream(req, client=MockStreamClient()))
+        events = list(adapter.stream(req, client=client))
         assert len(events) == 3
+        assert events[0].text == "hello "
+        assert events[1].text == "world"
         assert events[-1].done is True
-
-    def test_stream_invalid_client_raises(self) -> None:
-        adapter = ClaudeAdapter()
-        req = adapter.adapt(
-            compiled_prompt="x",
-            temperature=0.7,
-            max_output_tokens=1024,
-            stream=True,
-        )
-        with pytest.raises(TypeError, match="must implement stream"):
-            list(adapter.stream(req, client=object()))

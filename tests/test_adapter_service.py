@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Iterable
+import json
 
+import httpx
 import pytest
 
 from interceptor.adapters.models import AdaptedRequest, BackendName, StreamEvent
@@ -73,22 +73,28 @@ class TestExecute:
         )
         assert result == "sync result"
 
-    def test_execute_stream_mode(self) -> None:
+    def test_execute_stream_mode(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        sse_lines = [
+            'data: ' + json.dumps({"choices": [{"delta": {"content": "chunk"}, "finish_reason": None}]}),
+            '',
+            'data: [DONE]',
+            '',
+        ]
+        body = "\n".join(sse_lines).encode()
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, content=body, headers={"content-type": "text/event-stream"})
+
+        client = httpx.Client(transport=httpx.MockTransport(handler))
         svc = AdapterService()
-
-        @dataclass
-        class MockStreamClient:
-            def stream(self, request: AdaptedRequest) -> Iterable[StreamEvent]:
-                yield StreamEvent(type="content", text="chunk")
-                yield StreamEvent(type="done", done=True)
-
         iterable = svc.execute(
             backend="gpt",
             compiled_prompt="test",
             temperature=0.7,
             max_output_tokens=1024,
             stream=True,
-            client=MockStreamClient(),
+            client=client,
         )
         events = list(iterable)  # type: ignore[arg-type]
         assert len(events) == 2

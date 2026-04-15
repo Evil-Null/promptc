@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Iterable
-
 import pytest
 
 from interceptor.adapters.gpt import DEFAULT_MODEL, GptAdapter
@@ -98,7 +95,8 @@ class TestGptSend:
 
 
 class TestGptStream:
-    def test_no_client_raises(self) -> None:
+    def test_no_api_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         adapter = GptAdapter()
         req = adapter.adapt(
             compiled_prompt="x",
@@ -106,10 +104,31 @@ class TestGptStream:
             max_output_tokens=1024,
             stream=True,
         )
-        with pytest.raises(RuntimeError, match="requires a client"):
+        from interceptor.adapters.errors import MissingApiKeyError
+
+        with pytest.raises(MissingApiKeyError, match="OPENAI_API_KEY"):
             list(adapter.stream(req))
 
-    def test_stream_with_mock_client(self) -> None:
+    def test_stream_with_mock_transport(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        import json
+
+        import httpx
+
+        sse_lines = [
+            'data: ' + json.dumps({"choices": [{"delta": {"content": "part1"}, "finish_reason": None}]}),
+            '',
+            'data: ' + json.dumps({"choices": [{"delta": {"content": "part2"}, "finish_reason": None}]}),
+            '',
+            'data: [DONE]',
+            '',
+        ]
+        body = "\n".join(sse_lines).encode()
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, content=body, headers={"content-type": "text/event-stream"})
+
+        client = httpx.Client(transport=httpx.MockTransport(handler))
         adapter = GptAdapter()
         req = adapter.adapt(
             compiled_prompt="x",
@@ -117,25 +136,8 @@ class TestGptStream:
             max_output_tokens=1024,
             stream=True,
         )
-
-        @dataclass
-        class MockStreamClient:
-            def stream(self, request: AdaptedRequest) -> Iterable[StreamEvent]:
-                yield StreamEvent(type="content", text="part1")
-                yield StreamEvent(type="done", done=True)
-
-        events = list(adapter.stream(req, client=MockStreamClient()))
-        assert len(events) == 2
+        events = list(adapter.stream(req, client=client))
+        assert len(events) == 3
         assert events[0].text == "part1"
+        assert events[1].text == "part2"
         assert events[-1].done is True
-
-    def test_stream_invalid_client_raises(self) -> None:
-        adapter = GptAdapter()
-        req = adapter.adapt(
-            compiled_prompt="x",
-            temperature=0.7,
-            max_output_tokens=1024,
-            stream=True,
-        )
-        with pytest.raises(TypeError, match="must implement stream"):
-            list(adapter.stream(req, client=object()))

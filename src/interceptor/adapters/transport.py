@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json as json_mod
 import os
+from collections.abc import Iterator
 
 import httpx
 
@@ -11,7 +13,7 @@ from interceptor.adapters.errors import (
     BackendResponseParseError,
     MissingApiKeyError,
 )
-from interceptor.adapters.models import ExecutionResult
+from interceptor.adapters.models import ExecutionResult, StreamEvent
 
 CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 CLAUDE_API_VERSION = "2023-06-01"
@@ -25,6 +27,11 @@ def _get_api_key(env_var: str, backend: str) -> str:
     if not key:
         raise MissingApiKeyError(env_var, backend)
     return key
+
+
+# ---------------------------------------------------------------------------
+# Non-streaming send
+# ---------------------------------------------------------------------------
 
 
 def send_claude(
@@ -111,3 +118,109 @@ def send_gpt(
         usage_input_tokens=body.get("usage", {}).get("prompt_tokens"),
         usage_output_tokens=body.get("usage", {}).get("completion_tokens"),
     )
+
+
+# ---------------------------------------------------------------------------
+# Streaming send
+# ---------------------------------------------------------------------------
+
+
+def stream_claude(
+    payload: dict,
+    *,
+    client: httpx.Client | None = None,
+) -> Iterator[StreamEvent]:
+    """Stream a request to Claude Messages API, yielding normalized events."""
+    api_key = _get_api_key("ANTHROPIC_API_KEY", "claude")
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": CLAUDE_API_VERSION,
+        "content-type": "application/json",
+    }
+    send_payload = {**payload, "stream": True}
+
+    owns_client = client is None
+    if owns_client:
+        client = httpx.Client(timeout=REQUEST_TIMEOUT)
+    try:
+        with client.stream(
+            "POST", CLAUDE_API_URL, headers=headers, json=send_payload
+        ) as resp:
+            if resp.status_code != 200:
+                resp.read()
+                raise BackendRequestError(
+                    "claude", resp.status_code, resp.text[:500]
+                )
+            for line in resp.iter_lines():
+                if not line or line.startswith("event:"):
+                    continue
+                if not line.startswith("data: "):
+                    continue
+                raw = line[6:]
+                try:
+                    data = json_mod.loads(raw)
+                except (json_mod.JSONDecodeError, ValueError) as exc:
+                    raise BackendResponseParseError(
+                        "claude", f"malformed SSE data: {raw[:200]}"
+                    ) from exc
+                event_type = data.get("type", "")
+                if event_type == "content_block_delta":
+                    delta = data.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        yield StreamEvent(
+                            type="content", text=delta.get("text", "")
+                        )
+                elif event_type == "message_delta":
+                    yield StreamEvent(type="done", done=True)
+    finally:
+        if owns_client:
+            client.close()
+
+
+def stream_gpt(
+    payload: dict,
+    *,
+    client: httpx.Client | None = None,
+) -> Iterator[StreamEvent]:
+    """Stream a request to OpenAI Chat Completions API, yielding normalized events."""
+    api_key = _get_api_key("OPENAI_API_KEY", "gpt")
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    send_payload = {**payload, "stream": True}
+
+    owns_client = client is None
+    if owns_client:
+        client = httpx.Client(timeout=REQUEST_TIMEOUT)
+    try:
+        with client.stream(
+            "POST", OPENAI_API_URL, headers=headers, json=send_payload
+        ) as resp:
+            if resp.status_code != 200:
+                resp.read()
+                raise BackendRequestError(
+                    "gpt", resp.status_code, resp.text[:500]
+                )
+            for line in resp.iter_lines():
+                if not line or not line.startswith("data: "):
+                    continue
+                raw = line[6:]
+                if raw == "[DONE]":
+                    yield StreamEvent(type="done", done=True)
+                    return
+                try:
+                    data = json_mod.loads(raw)
+                except (json_mod.JSONDecodeError, ValueError) as exc:
+                    raise BackendResponseParseError(
+                        "gpt", f"malformed SSE data: {raw[:200]}"
+                    ) from exc
+                choices = data.get("choices", [])
+                if choices:
+                    delta = choices[0].get("delta", {})
+                    content = delta.get("content")
+                    if content:
+                        yield StreamEvent(type="content", text=content)
+    finally:
+        if owns_client:
+            client.close()

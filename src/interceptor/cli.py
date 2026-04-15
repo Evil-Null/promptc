@@ -428,6 +428,10 @@ def run(
         bool,
         typer.Option("--json", help="Output as JSON."),
     ] = False,
+    stream: Annotated[
+        bool,
+        typer.Option("--stream", help="Stream response tokens to terminal."),
+    ] = False,
 ) -> None:
     """Compile, route, and adapt a prompt. Use --dry-run to inspect without sending."""
     import json as json_mod
@@ -438,6 +442,10 @@ def run(
     from interceptor.config import load_config
     from interceptor.routing.router import route as do_route
     from interceptor.template_registry import TemplateRegistry
+
+    if stream and json_output:
+        console.print("[red]Error:[/red] --stream and --json cannot be used together.")
+        raise typer.Exit(code=1)
 
     config = load_config()
     registry = TemplateRegistry.load_all()
@@ -467,85 +475,106 @@ def run(
 
     service = AdapterService()
 
-    if not dry_run:
-        # Real execution path — send to backend API.
+    if dry_run:
+        # Dry-run path — adapt and display without sending.
+        request = service.adapt_request(
+            backend=backend_name,
+            compiled_prompt=compiled,
+            temperature=0.7,
+            max_output_tokens=4096,
+            stream=stream,
+        )
+
+        if json_output:
+            data = {
+                "template": template,
+                "backend": request.backend.value,
+                "temperature": request.temperature,
+                "max_output_tokens": request.max_output_tokens,
+                "streaming": request.streaming,
+                "payload": request.payload,
+                "system_text_length": len(request.payload.get("system", request.payload.get("messages", [{}])[0].get("content", ""))),
+                "user_text_length": len(request.payload.get("messages", [{}])[-1].get("content", "")),
+            }
+            print(json_mod.dumps(data, indent=2, ensure_ascii=False))
+            return
+
+        from rich.panel import Panel
+
+        system_text = request.payload.get("system", "")
+        if not system_text:
+            msgs = request.payload.get("messages", [])
+            system_text = msgs[0].get("content", "") if msgs else ""
+        user_text = request.payload.get("messages", [{}])[-1].get("content", "")
+
+        console.print(Panel(system_text[:500], title="System Content (preview)", border_style="cyan"))
+        console.print(Panel(user_text[:500], title="User Content (preview)", border_style="green"))
+
+        table = Table(title="Adapted Request Metadata", show_lines=True)
+        table.add_column("Field", style="bold")
+        table.add_column("Value")
+        table.add_row("Template", template)
+        table.add_row("Backend", request.backend.value)
+        table.add_row("Temperature", str(request.temperature))
+        table.add_row("Max Output Tokens", str(request.max_output_tokens))
+        table.add_row("Streaming", str(request.streaming))
+        table.add_row("System Content Length", str(len(system_text)))
+        table.add_row("User Content Length", str(len(user_text)))
+        console.print(table)
+
+        console.print("[dim]Dry-run only — no network calls made[/dim]")
+        return
+
+    if stream:
+        # Streaming execution path — progressive terminal passthrough.
         try:
-            result = service.execute_full(
+            events = service.execute_stream(
                 backend=backend_name,
                 compiled_prompt=compiled,
                 temperature=0.7,
                 max_output_tokens=4096,
             )
+            for event in events:
+                if event.done:
+                    break
+                sys.stdout.write(event.text)
+                sys.stdout.flush()
+            sys.stdout.write("\n")
+            sys.stdout.flush()
         except Exception as exc:
-            console.print(f"[red]Error:[/red] {exc}")
+            console.print(f"\n[red]Error:[/red] {exc}")
             raise typer.Exit(code=1) from exc
-
-        if json_output:
-            data = {
-                "template": template,
-                "backend": result.backend,
-                "finish_reason": result.finish_reason,
-                "usage_input_tokens": result.usage_input_tokens,
-                "usage_output_tokens": result.usage_output_tokens,
-                "text": result.text,
-            }
-            print(json_mod.dumps(data, indent=2, ensure_ascii=False))
-            return
-
-        console.print(result.text)
-        console.print(
-            f"\n[dim]{result.backend} · {result.finish_reason} · "
-            f"in={result.usage_input_tokens} out={result.usage_output_tokens}[/dim]"
-        )
         return
 
-    # Dry-run path — adapt and display without sending.
-    request = service.adapt_request(
-        backend=backend_name,
-        compiled_prompt=compiled,
-        temperature=0.7,
-        max_output_tokens=4096,
-        stream=False,
-    )
+    # Non-streaming execution path — send to backend API.
+    try:
+        result = service.execute_full(
+            backend=backend_name,
+            compiled_prompt=compiled,
+            temperature=0.7,
+            max_output_tokens=4096,
+        )
+    except Exception as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
 
     if json_output:
         data = {
             "template": template,
-            "backend": request.backend.value,
-            "temperature": request.temperature,
-            "max_output_tokens": request.max_output_tokens,
-            "streaming": request.streaming,
-            "payload": request.payload,
-            "system_text_length": len(request.payload.get("system", request.payload.get("messages", [{}])[0].get("content", ""))),
-            "user_text_length": len(request.payload.get("messages", [{}])[-1].get("content", "")),
+            "backend": result.backend,
+            "finish_reason": result.finish_reason,
+            "usage_input_tokens": result.usage_input_tokens,
+            "usage_output_tokens": result.usage_output_tokens,
+            "text": result.text,
         }
         print(json_mod.dumps(data, indent=2, ensure_ascii=False))
         return
 
-    from rich.panel import Panel
-
-    system_text = request.payload.get("system", "")
-    if not system_text:
-        msgs = request.payload.get("messages", [])
-        system_text = msgs[0].get("content", "") if msgs else ""
-    user_text = request.payload.get("messages", [{}])[-1].get("content", "")
-
-    console.print(Panel(system_text[:500], title="System Content (preview)", border_style="cyan"))
-    console.print(Panel(user_text[:500], title="User Content (preview)", border_style="green"))
-
-    table = Table(title="Adapted Request Metadata", show_lines=True)
-    table.add_column("Field", style="bold")
-    table.add_column("Value")
-    table.add_row("Template", template)
-    table.add_row("Backend", request.backend.value)
-    table.add_row("Temperature", str(request.temperature))
-    table.add_row("Max Output Tokens", str(request.max_output_tokens))
-    table.add_row("Streaming", str(request.streaming))
-    table.add_row("System Content Length", str(len(system_text)))
-    table.add_row("User Content Length", str(len(user_text)))
-    console.print(table)
-
-    console.print("[dim]Dry-run only — no network calls made[/dim]")
+    console.print(result.text)
+    console.print(
+        f"\n[dim]{result.backend} · {result.finish_reason} · "
+        f"in={result.usage_input_tokens} out={result.usage_output_tokens}[/dim]"
+    )
 
 
 def main() -> None:
