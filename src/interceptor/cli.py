@@ -817,6 +817,83 @@ def logs(
     console.print(table)
 
 
+# ---------------------------------------------------------------------------
+# Stats (derived metrics)
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def stats(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+    date_str: Annotated[
+        Optional[str],
+        typer.Option("--date", help="Date in YYYY-MM-DD format (default: today)."),
+    ] = None,
+) -> None:
+    """Show derived metrics for a day's decision log."""
+    import json as json_mod
+    from datetime import date
+
+    from interceptor.observability.decision_log import read_daily_log
+    from interceptor.observability.metrics import aggregate
+
+    day: date | None = None
+    if date_str:
+        try:
+            day = date.fromisoformat(date_str)
+        except ValueError:
+            console.print(f"[red]Invalid date:[/red] {date_str}")
+            raise typer.Exit(code=1)
+
+    records = read_daily_log(day)
+    snap = aggregate(records)
+
+    if json_output:
+        print(json_mod.dumps({
+            "date": (day or date.today()).isoformat(),
+            "total_decisions": snap.total_decisions,
+            "success_count": snap.success_count,
+            "error_count": snap.error_count,
+            "average_execution_time_ms": snap.average_execution_time_ms,
+            "retry_rate": snap.retry_rate,
+            "average_gate_score": snap.average_gate_score,
+            "average_validation_score": snap.average_validation_score,
+            "top_templates": [
+                {"name": t.name, "count": t.count} for t in snap.top_templates
+            ],
+        }, indent=2, ensure_ascii=False))
+        return
+
+    label = (day or date.today()).isoformat()
+    console.print(f"[bold]Stats — {label}[/bold]")
+
+    if snap.total_decisions == 0:
+        console.print("[dim]No decisions recorded.[/dim]")
+        return
+
+    console.print(f"  Decisions  : {snap.total_decisions}")
+    console.print(
+        f"  Success    : {snap.success_count}  "
+        f"Errors: {snap.error_count}"
+    )
+    if snap.average_execution_time_ms is not None:
+        console.print(f"  Avg time   : {snap.average_execution_time_ms} ms")
+    if snap.retry_rate is not None:
+        console.print(f"  Retry rate : {snap.retry_rate:.2%}")
+    if snap.average_validation_score is not None:
+        console.print(f"  Avg schema : {snap.average_validation_score:.4f}")
+    if snap.average_gate_score is not None:
+        console.print(f"  Avg gate   : {snap.average_gate_score:.4f}")
+
+    if snap.top_templates:
+        console.print("\n  [bold]Top templates:[/bold]")
+        for t in snap.top_templates:
+            console.print(f"    {t.count:>4}× {t.name}")
+
+
 def main() -> None:
     """Console script entry point."""
     app()
