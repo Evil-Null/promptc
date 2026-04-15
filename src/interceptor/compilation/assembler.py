@@ -78,6 +78,12 @@ def assemble_compiled_prompt(
         token_count_estimate=token_count,
         compression_level=compression_level,
         sections_included=sections_included,
+        system_directive_text=compressed_sections.get("system_directive", ""),
+        chain_of_thought_text=compressed_sections.get("chain_of_thought", ""),
+        output_schema_text=compressed_sections.get("output_schema", ""),
+        quality_gates_text=compressed_sections.get("quality_gates", ""),
+        anti_patterns_text=compressed_sections.get("anti_patterns", ""),
+        user_input_text=raw_input,
     )
 
 

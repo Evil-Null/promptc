@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
 from interceptor.adapters.claude import ClaudeAdapter
 from interceptor.adapters.gpt import GptAdapter
@@ -12,6 +12,9 @@ from interceptor.adapters.models import (
     StreamEvent,
 )
 from interceptor.adapters.registry import get_backend_capability
+
+if TYPE_CHECKING:
+    from interceptor.compilation.models import CompiledPrompt
 
 _ADAPTERS = {
     BackendName.CLAUDE: ClaudeAdapter(),
@@ -34,7 +37,7 @@ class AdapterService:
         self,
         *,
         backend: str,
-        compiled_prompt: str,
+        compiled_prompt: str | CompiledPrompt,
         temperature: float,
         max_output_tokens: int,
         stream: bool = False,
@@ -51,7 +54,7 @@ class AdapterService:
         self,
         *,
         backend: str,
-        compiled_prompt: str,
+        compiled_prompt: str | CompiledPrompt,
         temperature: float,
         max_output_tokens: int,
         stream: bool = False,

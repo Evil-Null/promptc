@@ -404,6 +404,121 @@ def backend_inspect(
     console.print(table)
 
 
+# ---------------------------------------------------------------------------
+# Run (compile + adapt dry-run)
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def run(
+    text: Annotated[str, typer.Argument(help="User input text.")],
+    template: Annotated[
+        str,
+        typer.Option("--template", "-t", help="Template name."),
+    ] = "",
+    backend: Annotated[
+        str,
+        typer.Option("--backend", "-b", help="Backend name (claude, gpt)."),
+    ] = "",
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Show adapted request without network calls."),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Compile, route, and adapt a prompt. Use --dry-run to inspect without sending."""
+    import json as json_mod
+
+    from interceptor.adapters.selector import select_backend
+    from interceptor.adapters.service import AdapterService
+    from interceptor.compilation.assembler import compile_prompt
+    from interceptor.config import load_config
+    from interceptor.routing.router import route as do_route
+    from interceptor.template_registry import TemplateRegistry
+
+    if not dry_run:
+        console.print("[red]Error:[/red] Only --dry-run is supported in V1.")
+        raise typer.Exit(code=1)
+
+    config = load_config()
+    registry = TemplateRegistry.load_all()
+
+    if template:
+        tpl = registry.get(template)
+        if tpl is None:
+            console.print(f"[red]Error:[/red] Unknown template {template!r}")
+            raise typer.Exit(code=1)
+    else:
+        decision = do_route(text, registry, config)
+        if decision.template is None:
+            console.print("[red]Error:[/red] No template matched.")
+            raise typer.Exit(code=1)
+        tpl = decision.template
+        template = tpl.meta.name
+
+    # Compile.
+    compiled, _budget = compile_prompt(template=tpl, raw_input=text)
+
+    # Select backend.
+    if backend:
+        backend_name = backend
+    else:
+        cap = select_backend()
+        backend_name = cap.name.value
+
+    # Adapt.
+    service = AdapterService()
+    request = service.adapt_request(
+        backend=backend_name,
+        compiled_prompt=compiled,
+        temperature=0.7,
+        max_output_tokens=4096,
+        stream=False,
+    )
+
+    if json_output:
+        data = {
+            "template": template,
+            "backend": request.backend.value,
+            "temperature": request.temperature,
+            "max_output_tokens": request.max_output_tokens,
+            "streaming": request.streaming,
+            "payload": request.payload,
+            "system_text_length": len(request.payload.get("system", request.payload.get("messages", [{}])[0].get("content", ""))),
+            "user_text_length": len(request.payload.get("messages", [{}])[-1].get("content", "")),
+        }
+        print(json_mod.dumps(data, indent=2, ensure_ascii=False))
+        return
+
+    from rich.panel import Panel
+
+    system_text = request.payload.get("system", "")
+    if not system_text:
+        msgs = request.payload.get("messages", [])
+        system_text = msgs[0].get("content", "") if msgs else ""
+    user_text = request.payload.get("messages", [{}])[-1].get("content", "")
+
+    console.print(Panel(system_text[:500], title="System Content (preview)", border_style="cyan"))
+    console.print(Panel(user_text[:500], title="User Content (preview)", border_style="green"))
+
+    table = Table(title="Adapted Request Metadata", show_lines=True)
+    table.add_column("Field", style="bold")
+    table.add_column("Value")
+    table.add_row("Template", template)
+    table.add_row("Backend", request.backend.value)
+    table.add_row("Temperature", str(request.temperature))
+    table.add_row("Max Output Tokens", str(request.max_output_tokens))
+    table.add_row("Streaming", str(request.streaming))
+    table.add_row("System Content Length", str(len(system_text)))
+    table.add_row("User Content Length", str(len(user_text)))
+    console.print(table)
+
+    console.print("[dim]Dry-run only — no network calls made[/dim]")
+
+
 def main() -> None:
     """Console script entry point."""
     app()

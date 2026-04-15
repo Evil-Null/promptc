@@ -59,6 +59,12 @@ class CompiledPrompt:
     token_count_estimate: int
     compression_level: CompressionLevel
     sections_included: list[str] = field(default_factory=list)
+    system_directive_text: str = ""
+    chain_of_thought_text: str = ""
+    output_schema_text: str = ""
+    quality_gates_text: str = ""
+    anti_patterns_text: str = ""
+    user_input_text: str = ""
 
 
 @dataclass(slots=True)

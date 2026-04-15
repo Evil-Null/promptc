@@ -9,9 +9,10 @@ from interceptor.adapters.models import (
     BackendName,
     StreamEvent,
 )
+from interceptor.adapters.prompt_extract import extract_system_text, extract_user_text
 
 if TYPE_CHECKING:
-    pass
+    from interceptor.compilation.models import CompiledPrompt
 
 DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
@@ -24,15 +25,22 @@ class ClaudeAdapter:
     def adapt(
         self,
         *,
-        compiled_prompt: str,
+        compiled_prompt: str | CompiledPrompt,
         temperature: float,
         max_output_tokens: int,
         stream: bool,
     ) -> AdaptedRequest:
+        if isinstance(compiled_prompt, str):
+            system_text = compiled_prompt
+            user_text = compiled_prompt
+        else:
+            system_text = extract_system_text(compiled_prompt)
+            user_text = extract_user_text(compiled_prompt)
+
         payload: dict = {
             "model": DEFAULT_MODEL,
-            "system": compiled_prompt,
-            "messages": [{"role": "user", "content": compiled_prompt}],
+            "system": system_text,
+            "messages": [{"role": "user", "content": user_text}],
             "max_tokens": max_output_tokens,
             "temperature": temperature,
             "stream": stream,
