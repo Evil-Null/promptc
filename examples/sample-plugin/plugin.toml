@@ -1,0 +1,8 @@
+name = "sample-whitespace-normalizer"
+version = "1.0.0"
+description = "Reference plugin: strips trailing whitespace before validation"
+author = "interceptor team"
+hooks = ["prevalidate"]
+api_version = "v1"
+min_compiler_version = "0.1.0"
+max_compiler_version = "99.0.0"
