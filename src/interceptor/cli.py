@@ -459,7 +459,6 @@ def _render_validation(validation: object) -> None:
 
 def _render_gate_evaluation(gate_eval: object) -> None:
     """Print gate evaluation results to terminal."""
-    hard_passed = getattr(gate_eval, "hard_passed", True)
     gate_score = getattr(gate_eval, "gate_score", 1.0)
     failures = getattr(gate_eval, "failures", [])
     warnings = getattr(gate_eval, "warnings", [])
@@ -552,12 +551,18 @@ def _log_execution(
 
         log_decision(record)
     except Exception:
-        pass
+        import logging as _logging
+        _logging.getLogger(__name__).debug(
+            "execution log write failed", exc_info=True,
+        )
 
 
 # ---------------------------------------------------------------------------
 # Run (compile + adapt dry-run)
 # ---------------------------------------------------------------------------
+
+_DEFAULT_TEMPERATURE = 0.7
+_DEFAULT_MAX_OUTPUT_TOKENS = 4096
 
 
 @app.command()
@@ -635,8 +640,8 @@ def run(
         request = service.adapt_request(
             backend=backend_name,
             compiled_prompt=compiled,
-            temperature=0.7,
-            max_output_tokens=4096,
+            temperature=_DEFAULT_TEMPERATURE,
+            max_output_tokens=_DEFAULT_MAX_OUTPUT_TOKENS,
             stream=stream,
         )
 
@@ -687,8 +692,8 @@ def run(
                 service=service,
                 backend=backend_name,
                 compiled_prompt=compiled,
-                temperature=0.7,
-                max_output_tokens=4096,
+                temperature=_DEFAULT_TEMPERATURE,
+                max_output_tokens=_DEFAULT_MAX_OUTPUT_TOKENS,
             )
             for event in events:
                 if event.done:
@@ -711,8 +716,8 @@ def run(
             service=service,
             backend=backend_name,
             compiled_prompt=compiled,
-            temperature=0.7,
-            max_output_tokens=4096,
+            temperature=_DEFAULT_TEMPERATURE,
+            max_output_tokens=_DEFAULT_MAX_OUTPUT_TOKENS,
         )
     except Exception as exc:
         elapsed_ms = int((time_mod.monotonic() - start_ns) * 1000)
@@ -997,6 +1002,10 @@ def search(
         int,
         typer.Option("--limit", help="Max results (newest first)."),
     ] = 50,
+    query: Annotated[
+        Optional[str],
+        typer.Option("--query", "-q", help="Full-text search across log records."),
+    ] = None,
     json_output: Annotated[
         bool,
         typer.Option("--json", help="Output as JSON."),
@@ -1016,7 +1025,7 @@ def search(
             raise typer.Exit(code=1)
 
     results = search_logs(
-        LOG_DIR, template=template, since=since_td, limit=limit,
+        LOG_DIR, template=template, since=since_td, limit=limit, query=query,
     )
     _render_log_results(results, json_output=json_output, title="Search results")
 

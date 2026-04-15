@@ -5,15 +5,19 @@ from __future__ import annotations
 from interceptor.validation.models import ValidationResult
 from interceptor.validation.validators import (
     BaseValidator,
+    CodeValidator,
     FreeformValidator,
     JsonValidator,
     MarkdownTableValidator,
     NumberedListValidator,
     SectionsValidator,
+    YamlValidator,
 )
 
 _VALIDATORS: dict[str, BaseValidator] = {
     "json": JsonValidator(),
+    "yaml": YamlValidator(),
+    "code": CodeValidator(),
     "markdowntable": MarkdownTableValidator(),
     "sections": SectionsValidator(),
     "numberedlist": NumberedListValidator(),
@@ -45,6 +49,10 @@ def infer_format(output_schema: str) -> str:
     simple keyword matching — intentionally boring and deterministic.
     """
     lower = output_schema.lower()
+    if "yaml" in lower or "yml" in lower:
+        return "yaml"
+    if "code" in lower or "snippet" in lower or "implementation" in lower:
+        return "code"
     if "json" in lower:
         return "json"
     if "table" in lower:

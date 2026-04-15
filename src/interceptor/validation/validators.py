@@ -185,6 +185,119 @@ class FreeformValidator(BaseValidator):
         )
 
 
+class YamlValidator(BaseValidator):
+    """Verify response is plausible YAML (heuristic, no PyYAML dep)."""
+
+    name = "yaml"
+
+    _KEY_VALUE_RE = re.compile(r"^\s*\w[\w\s]*:\s+\S", re.MULTILINE)
+
+    def validate(self, text: str, output_schema: str) -> ValidationResult:
+        issues: list[ValidationIssue] = []
+        stripped = text.strip()
+
+        if not stripped:
+            issues.append(ValidationIssue("non_empty", "Output is empty"))
+            return ValidationResult(
+                status=ValidationStatus.FAIL,
+                score=0.0,
+                validator_name=self.name,
+                issues=issues,
+            )
+
+        clean = _strip_code_fence(stripped)
+        first_char = clean.lstrip()[:1]
+        looks_like_json = first_char in ("{", "[")
+        has_kv = bool(self._KEY_VALUE_RE.search(clean))
+        has_list = bool(
+            re.search(r"^\s*-\s+\S", clean, re.MULTILINE)
+        )
+
+        if looks_like_json or (not has_kv and not has_list):
+            issues.append(
+                ValidationIssue(
+                    "valid_yaml",
+                    "Text does not look like valid YAML",
+                )
+            )
+
+        if not has_kv and not has_list:
+            issues.append(
+                ValidationIssue(
+                    "has_structure",
+                    "YAML has no mapping or sequence structure",
+                )
+            )
+
+        return self._build_result(issues, 3)
+
+
+class CodeValidator(BaseValidator):
+    """Verify response contains a code block or code-like content."""
+
+    name = "code"
+
+    _FENCE_RE = re.compile(r"^```", re.MULTILINE)
+    _CODE_KEYWORDS_RE = re.compile(
+        r"\b(def|function|class|import|return|const|let|var"
+        r"|if|else|for|while|try|catch|async|await)\b"
+    )
+    _CODE_SYMBOLS_RE = re.compile(r"[{};()=]")
+
+    def validate(self, text: str, output_schema: str) -> ValidationResult:
+        issues: list[ValidationIssue] = []
+        stripped = text.strip()
+
+        if not stripped:
+            issues.append(ValidationIssue("non_empty", "Output is empty"))
+            return ValidationResult(
+                status=ValidationStatus.FAIL,
+                score=0.0,
+                validator_name=self.name,
+                issues=issues,
+            )
+
+        has_fence = len(self._FENCE_RE.findall(stripped)) >= 2
+        has_code_traits = self._looks_like_code(stripped)
+
+        if not has_fence and not has_code_traits:
+            issues.append(
+                ValidationIssue(
+                    "has_code_block",
+                    "No fenced code block or code-like content found",
+                )
+            )
+
+        if self._is_mostly_prose(stripped):
+            issues.append(
+                ValidationIssue(
+                    "not_prose",
+                    "Content appears to be mostly natural language prose",
+                )
+            )
+
+        return self._build_result(issues, 3)
+
+    def _looks_like_code(self, text: str) -> bool:
+        """Heuristic: text has code keywords + symbols."""
+        keyword_hits = len(self._CODE_KEYWORDS_RE.findall(text))
+        symbol_hits = len(self._CODE_SYMBOLS_RE.findall(text))
+        return keyword_hits >= 2 and symbol_hits >= 3
+
+    def _is_mostly_prose(self, text: str) -> bool:
+        """Return True when >80 % of non-blank lines look like prose."""
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        if not lines:
+            return False
+        prose_count = sum(
+            1
+            for ln in lines
+            if re.match(r"^[A-Z][a-z]+(?:\s+\w+){2,}", ln.strip())
+        )
+        prose_ratio = prose_count / len(lines)
+        return prose_ratio > 0.8
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

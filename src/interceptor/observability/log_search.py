@@ -62,6 +62,7 @@ def search_logs(
     since: timedelta | None = None,
     now: datetime | None = None,
     limit: int | None = None,
+    query: str | None = None,
 ) -> list[dict]:
     """Search decision log records across canonical files.
 
@@ -111,6 +112,14 @@ def search_logs(
                     if ts_dt < cutoff:
                         continue
                 except ValueError:
+                    continue
+
+            if query is not None and query != "":
+                q = query.lower()
+                searchable = " ".join(
+                    str(v) for v in rec.values() if isinstance(v, str)
+                )
+                if q not in searchable.lower():
                     continue
 
             records.append((ts_str, rec))

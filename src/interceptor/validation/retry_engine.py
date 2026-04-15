@@ -9,7 +9,6 @@ from interceptor.validation.retry_models import (
     FailureCategory,
     SAME_FAILURE_THRESHOLD,
     StrictnessLevel,
-    STRICTNESS_ORDER,
 )
 
 if TYPE_CHECKING:

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [1.0.0] — 2025-07-16
 
-First stable release. Eight engineering phases, 32 pull requests, 1182 tests.
+First stable release. Eight engineering phases, 33 pull requests, 1202+ tests.
 
 ### Phase 1 — CLI Foundation (PR-1)
 
@@ -37,7 +37,7 @@ First stable release. Eight engineering phases, 32 pull requests, 1182 tests.
 
 ### Phase 5 — Validation & Quality (PR-11 through PR-13)
 
-- Schema validation layer with 5 format validators (JSON, YAML, Markdown, Code, Freeform)
+- Schema validation layer with 7 format validators (JSON, YAML, Markdown Table, Sections, Numbered List, Code, Freeform)
 - Quality gate evaluation with 3 evaluator families
 - Retry engine with strictness escalation across compression levels
 

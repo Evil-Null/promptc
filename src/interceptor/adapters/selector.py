@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from interceptor.adapters.models import BackendCapability, BackendName
+from interceptor.adapters.models import BackendCapability
 from interceptor.adapters.registry import (
     get_backend_capability,
     list_backend_capabilities,

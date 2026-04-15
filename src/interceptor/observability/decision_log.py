@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import logging
 from datetime import date, datetime, timezone
 from pathlib import Path
+
+_logger = logging.getLogger(__name__)
 
 from interceptor.constants import LOG_DIR
 from interceptor.observability.models import DecisionRecord
@@ -37,7 +40,7 @@ def log_decision(
         with path.open("a", encoding="utf-8") as fh:
             fh.write(line + "\n")
     except Exception:
-        pass
+        _logger.debug("decision log write failed", exc_info=True)
 
 
 def read_daily_log(
@@ -49,7 +52,12 @@ def read_daily_log(
     if not path.exists():
         return []
     records: list[dict] = []
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        _logger.debug("failed to read daily log %s", path, exc_info=True)
+        return []
+    for raw in raw_text.splitlines():
         raw = raw.strip()
         if raw:
             try:
