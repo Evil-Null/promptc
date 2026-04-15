@@ -2,10 +2,10 @@
 
 > Universal CLI middleware that intercepts user input, classifies intent, injects optimized prompt templates, and returns structured responses.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-green.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-1202%20passed-brightgreen.svg)](#test-suite)
+[![Tests](https://img.shields.io/badge/tests-1257%20passed-brightgreen.svg)](#test-suite)
 
 ---
 
@@ -27,7 +27,7 @@ graph LR
     U["User Input"] --> R["🎯 Router<br/><sub>4-zone scoring</sub>"]
     R --> C["⚙️ Compiler<br/><sub>token budget + compression</sub>"]
     C --> B["📡 Backend<br/><sub>Claude · GPT · httpx SSE</sub>"]
-    B --> V["✅ Validator<br/><sub>5 formats · quality gates</sub>"]
+    B --> V["✅ Validator<br/><sub>7 formats · quality gates</sub>"]
     V --> RE["🔄 Retry<br/><sub>strictness escalation</sub>"]
     V --> O["📊 Observer<br/><sub>JSONL decision log</sub>"]
 
@@ -54,7 +54,7 @@ graph LR
 | **Compile** | `compilation/` | Token-budgeted assembly with 4 compression levels |
 | **Adapt** | `adapters/` | Backend-specific payload formatting (Claude, GPT) |
 | **Send** | `adapters/transport` | Real HTTP dispatch via httpx (streaming + non-streaming) |
-| **Validate** | `validation/` | 5-format schema validation + 3 quality gate evaluators |
+| **Validate** | `validation/` | 7-format schema validation + 3 quality gate evaluators |
 | **Retry** | `validation/retry_engine` | Strictness escalation across compression levels |
 | **Log** | `observability/` | JSONL decision logging, metrics, pruning, rotation, search |
 | **Plugin** | `plugins/` | Hook injection at all 4 stages with 5s timeout enforcement |
@@ -80,9 +80,9 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 # Verify
-mycli version          # → 1.0.0
+mycli version          # → 1.1.0
 mycli health --strict  # → all checks pass
-pytest -q              # → 1202 passed
+pytest -q              # → 1257 passed
 ```
 
 ## CLI Reference
@@ -130,7 +130,8 @@ mycli backend inspect claude                     # Backend capabilities
 mycli logs                                       # Today's decision log
 mycli logs --count 20 --json                     # Last 20 entries as JSON
 mycli logs today | week | month                  # Period views
-mycli logs search "code-review"                  # Full-text search
+mycli logs search "code-review"                  # Search by template
+mycli logs search --query "auth"                 # Full-text search
 mycli logs prune --days 30                       # Retention pruning
 mycli logs rotate                                # Gzip rotation
 
@@ -169,7 +170,7 @@ src/interceptor/
 ├── routing/                  # 4-zone router + trigger index + scoring
 ├── compilation/              # Assembler, budget, compressor, tokenizer
 ├── adapters/                 # Claude + GPT adapters, httpx transport
-├── validation/               # 5 format validators, 3 gate evaluators, retry
+├── validation/               # 7 format validators, 3 gate evaluators, retry
 ├── observability/            # JSONL logs, metrics, prune, rotate, search
 ├── plugins/                  # Discovery, registry, runtime, hooks, install
 └── templates/builtin/        # 4 builtin TOML templates
@@ -179,11 +180,11 @@ src/interceptor/
 
 | Metric | Value |
 |---|---|
-| Total tests | **1202** |
+| Total tests | **1257** |
 | Failures | **0** |
-| Test files | 55 |
+| Test files | 58 |
 | Production files | 57 |
-| Production lines | ~6,500 |
+| Production lines | ~6,600 |
 
 ```bash
 pytest -q                    # Full suite (~6s)
