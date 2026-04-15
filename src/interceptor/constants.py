@@ -25,5 +25,7 @@ CACHE_DIR: Path = (
 
 CONFIG_FILE: Path = CONFIG_DIR / "config.toml"
 
+LOG_DIR: Path = DATA_DIR / "logs"
+
 TEMPLATES_BUILTIN_DIR: Path = Path(__file__).parent / "templates" / "builtin"
 TEMPLATES_CUSTOM_DIR: Path = CONFIG_DIR / "templates" / "custom"

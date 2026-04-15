@@ -467,6 +467,62 @@ def _render_retry_result(retry: object) -> None:
             )
 
 
+def _log_execution(
+    config: object,
+    raw_input: str,
+    template_name: str,
+    backend: str,
+    elapsed_ms: int,
+    *,
+    result: object | None = None,
+    error: str | None = None,
+) -> None:
+    """Build and emit a decision record.  Fire-and-forget — never raises."""
+    try:
+        enabled = getattr(
+            getattr(config, "observability", None), "decision_logging", False
+        )
+        if not enabled:
+            return
+
+        from interceptor.observability.decision_log import log_decision
+        from interceptor.observability.models import DecisionRecord
+
+        record = DecisionRecord(
+            input_hash=DecisionRecord.hash_input(raw_input),
+            selected_template=template_name,
+            backend=backend,
+            execution_time_ms=elapsed_ms,
+        )
+
+        if error:
+            record.outcome = "error"
+            record.error = error
+        elif result is not None:
+            record.finish_reason = getattr(result, "finish_reason", None)
+            record.usage_input_tokens = getattr(result, "usage_input_tokens", None)
+            record.usage_output_tokens = getattr(result, "usage_output_tokens", None)
+
+            val = getattr(result, "validation", None)
+            if val:
+                record.validation_status = str(getattr(val, "status", ""))
+                record.validation_score = getattr(val, "score", None)
+
+            gate = getattr(result, "gate_evaluation", None)
+            if gate:
+                record.gate_score = getattr(gate, "gate_score", None)
+                record.gate_hard_passed = getattr(gate, "hard_passed", None)
+
+            retry = getattr(result, "retry_result", None)
+            if retry:
+                record.retry_attempts = getattr(retry, "attempts", None)
+                record.retry_outcome = str(getattr(retry, "outcome", ""))
+
+        log_decision(record)
+    except Exception:
+        pass
+
+
 # ---------------------------------------------------------------------------
 # Run (compile + adapt dry-run)
 # ---------------------------------------------------------------------------
@@ -610,6 +666,9 @@ def run(
         return
 
     # Non-streaming execution path — send to backend API.
+    import time as time_mod
+
+    start_ns = time_mod.monotonic()
     try:
         result = service.execute_full(
             backend=backend_name,
@@ -618,8 +677,13 @@ def run(
             max_output_tokens=4096,
         )
     except Exception as exc:
+        elapsed_ms = int((time_mod.monotonic() - start_ns) * 1000)
+        _log_execution(config, text, template, backend_name, elapsed_ms, error=str(exc))
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
+
+    elapsed_ms = int((time_mod.monotonic() - start_ns) * 1000)
+    _log_execution(config, text, template, backend_name, elapsed_ms, result=result)
 
     if json_output:
         data = {
@@ -683,6 +747,74 @@ def run(
 
     if result.retry_result:
         _render_retry_result(result.retry_result)
+
+
+# ---------------------------------------------------------------------------
+# Logs (decision log reader)
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def logs(
+    count: Annotated[
+        int,
+        typer.Option("--count", "-n", help="Number of recent entries."),
+    ] = 10,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Show today's decision log entries."""
+    import json as json_mod
+    from datetime import date
+
+    from interceptor.observability.decision_log import read_daily_log
+
+    records = read_daily_log()
+    total = len(records)
+    recent = records[-count:] if count < total else records
+
+    if json_output:
+        print(json_mod.dumps({
+            "date": date.today().isoformat(),
+            "total": total,
+            "showing": len(recent),
+            "entries": recent,
+        }, indent=2, ensure_ascii=False))
+        return
+
+    console.print(f"[bold]Decision log — {date.today().isoformat()}[/bold]")
+    console.print(f"Total entries: {total}")
+
+    if not records:
+        console.print("[dim]No entries yet.[/dim]")
+        return
+
+    table = Table(show_lines=False)
+    table.add_column("Time", style="dim", max_width=19)
+    table.add_column("Template")
+    table.add_column("Backend")
+    table.add_column("Outcome")
+    table.add_column("Tokens", justify="right")
+    table.add_column("Retry")
+
+    for rec in recent:
+        ts = rec.get("timestamp", "")[:19]
+        tpl = rec.get("selected_template", "—")
+        bk = rec.get("backend", "—")
+        out = rec.get("outcome", "—")
+        tok_in = rec.get("usage_input_tokens") or 0
+        tok_out = rec.get("usage_output_tokens") or 0
+        tokens = f"{tok_in}→{tok_out}"
+        retry_a = rec.get("retry_attempts")
+        retry_o = rec.get("retry_outcome", "")
+        retry_str = f"{retry_a}×{retry_o}" if retry_a and retry_o != "not_needed" else "—"
+
+        style = "green" if out == "success" else "red"
+        table.add_row(ts, tpl, bk, f"[{style}]{out}[/{style}]", tokens, retry_str)
+
+    console.print(table)
 
 
 def main() -> None:

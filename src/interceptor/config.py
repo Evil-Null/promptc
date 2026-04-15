@@ -79,6 +79,14 @@ class PluginsConfig(BaseModel):
     enabled: bool = True
 
 
+class ObservabilityConfig(BaseModel):
+    """Observability feature flags."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    decision_logging: bool = True
+
+
 class Config(BaseModel):
     """Root configuration — all fields have compiled-in defaults."""
 
@@ -88,6 +96,7 @@ class Config(BaseModel):
     routing: RoutingConfig = RoutingConfig()
     backends: BackendsConfig = BackendsConfig()
     plugins: PluginsConfig = PluginsConfig()
+    observability: ObservabilityConfig = ObservabilityConfig()
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +125,7 @@ _ENV_MAP: dict[str, list[str]] = {
     "INTERCEPTOR_ENV": ["general", "env"],
     "INTERCEPTOR_ROUTING_MIN_CONFIDENCE": ["routing", "min_confidence"],
     "INTERCEPTOR_ROUTING_CLARITY_GAP": ["routing", "clarity_gap"],
+    "INTERCEPTOR_DECISION_LOGGING": ["observability", "decision_logging"],
 }
 
 
@@ -135,6 +145,8 @@ def _apply_env_overrides(data: dict[str, Any]) -> dict[str, Any]:
                 target[leaf] = float(raw)
             except ValueError:
                 pass
+        elif leaf in {"decision_logging"}:
+            target[leaf] = raw.lower() in {"true", "1", "yes"}
         else:
             target[leaf] = raw
     return data

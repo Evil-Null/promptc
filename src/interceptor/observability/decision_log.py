@@ -1,0 +1,59 @@
+"""Fire-and-forget JSONL decision log writer."""
+
+from __future__ import annotations
+
+import dataclasses
+import json
+from datetime import date
+from pathlib import Path
+
+from interceptor.constants import LOG_DIR
+from interceptor.observability.models import DecisionRecord
+
+
+def get_log_dir(base: Path | None = None) -> Path:
+    """Return (and create) the log directory."""
+    d = base or LOG_DIR
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def get_daily_log_path(
+    day: date | None = None, *, log_dir: Path | None = None
+) -> Path:
+    """Canonical JSONL path for *day* (defaults to today)."""
+    return get_log_dir(log_dir) / f"decisions-{(day or date.today()).isoformat()}.jsonl"
+
+
+def log_decision(
+    record: DecisionRecord, *, log_dir: Path | None = None
+) -> None:
+    """Append *record* as one JSON line.  Never raises."""
+    try:
+        d = get_log_dir(log_dir)
+        day = record.timestamp[:10]
+        path = d / f"decisions-{day}.jsonl"
+        line = json.dumps(dataclasses.asdict(record), ensure_ascii=False)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(line + "\n")
+    except Exception:
+        pass
+
+
+def read_daily_log(
+    day: date | None = None, *, log_dir: Path | None = None
+) -> list[dict]:
+    """Read all records from the daily log.  Returns ``[]`` if missing."""
+    d = log_dir or LOG_DIR
+    path = d / f"decisions-{(day or date.today()).isoformat()}.jsonl"
+    if not path.exists():
+        return []
+    records: list[dict] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        raw = raw.strip()
+        if raw:
+            try:
+                records.append(json.loads(raw))
+            except json.JSONDecodeError:
+                continue
+    return records
