@@ -1244,4 +1244,7 @@ def plugins(
 
 def main() -> None:
     """Console script entry point."""
+    from dotenv import load_dotenv
+
+    load_dotenv()
     app()
