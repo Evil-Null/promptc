@@ -12,7 +12,11 @@ from rich.console import Console
 from rich.table import Table
 
 from interceptor.constants import VERSION
-from interceptor.health import HealthCheckResult, check_config_valid
+from interceptor.health import (
+    HealthCheckResult,
+    check_config_valid,
+    check_templates_valid,
+)
 
 app = typer.Typer(
     name="mycli",
@@ -28,6 +32,7 @@ console = Console()
 
 _HEALTH_CHECKS: dict[str, Callable[..., HealthCheckResult]] = {
     "config_valid": check_config_valid,
+    "templates_valid": check_templates_valid,
 }
 
 _STATUS_STYLE: dict[str, str] = {
@@ -100,6 +105,36 @@ def _exit_on_status(
         raise typer.Exit(code=1)
     if strict and has_warn:
         raise typer.Exit(code=1)
+
+
+@app.command()
+def templates() -> None:
+    """List all loaded prompt templates."""
+    from interceptor.template_registry import TemplateRegistry
+
+    registry = TemplateRegistry.load_all()
+    items = registry.list_all()
+
+    if not items:
+        console.print("[yellow]No templates loaded.[/yellow]")
+        return
+
+    table = Table(title="Prompt Templates", show_lines=True)
+    table.add_column("Name", style="bold")
+    table.add_column("Category")
+    table.add_column("Triggers", justify="right")
+    table.add_column("Version")
+
+    for t in items:
+        trigger_count = len(t.triggers.en) + len(t.triggers.ka)
+        table.add_row(
+            t.meta.name,
+            t.meta.category.value,
+            str(trigger_count),
+            t.meta.version,
+        )
+
+    console.print(table)
 
 
 def main() -> None:

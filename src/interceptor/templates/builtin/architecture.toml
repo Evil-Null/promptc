@@ -1,0 +1,58 @@
+[meta]
+name = "architecture"
+category = "CONSTRUCTIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "design this system",
+    "architecture for",
+    "system design",
+    "how to architect",
+    "design a service",
+]
+ka = [
+    "სისტემის დიზაინი",
+    "არქიტექტურა",
+    "როგორ დავპროექტო",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a principal systems architect. Design a robust, scalable architecture \
+for the given requirements. Consider failure modes, scaling strategy, and \
+operational concerns. Justify every major decision.\
+"""
+chain_of_thought = """\
+1. Clarify requirements and constraints.
+2. Identify key components and service boundaries.
+3. Define data flow and communication patterns.
+4. Address failure modes, retry logic, and circuit breakers.
+5. Document trade-offs and alternatives considered.\
+"""
+output_schema = """\
+Return: component diagram (ASCII or structured text), \
+data flow description, \
+API contracts (key endpoints), \
+scaling strategy, \
+trade-off analysis, \
+and operational runbook outline.\
+"""
+
+[quality_gates]
+hard = [
+    "Must address failure modes explicitly",
+    "Must define clear component boundaries",
+]
+soft = [
+    "Should include capacity estimates",
+    "Should reference industry patterns (CQRS, event sourcing, etc.)",
+]
+
+anti_patterns = [
+    "Monolithic design without justification",
+    "Ignoring operational concerns",
+    "Over-engineering for current scale",
+]

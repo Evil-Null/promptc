@@ -24,3 +24,6 @@ CACHE_DIR: Path = (
 ) / "interceptor"
 
 CONFIG_FILE: Path = CONFIG_DIR / "config.toml"
+
+TEMPLATES_BUILTIN_DIR: Path = Path(__file__).parent / "templates" / "builtin"
+TEMPLATES_CUSTOM_DIR: Path = CONFIG_DIR / "templates" / "custom"

@@ -1,4 +1,4 @@
-"""Health check logic for config validation."""
+"""Health check logic for config and template validation."""
 
 from __future__ import annotations
 
@@ -79,4 +79,30 @@ def check_config_valid(path: Path | None = None) -> HealthCheckResult:
         status="pass",
         message="Config file is valid.",
         details={"path": str(config_path)},
+    )
+
+
+def check_templates_valid() -> HealthCheckResult:
+    """Verify that at least one template is loadable.
+
+    Returns:
+        pass — at least one template loaded successfully.
+        fail — zero loadable templates (builtin + custom).
+    """
+    from interceptor.template_registry import TemplateRegistry
+
+    registry = TemplateRegistry.load_all()
+    total = registry.count()
+
+    if total == 0:
+        return HealthCheckResult(
+            name="templates_valid",
+            status="fail",
+            message="No loadable templates found — check builtin directory.",
+        )
+
+    return HealthCheckResult(
+        name="templates_valid",
+        status="pass",
+        message=f"{total} template(s) loaded successfully.",
     )

@@ -1,0 +1,56 @@
+[meta]
+name = "explain"
+category = "COMMUNICATIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "explain this",
+    "what does this do",
+    "how does this work",
+    "explain to me",
+    "break this down",
+]
+ka = [
+    "ახსენი",
+    "რას აკეთებს",
+    "როგორ მუშაობს",
+    "ამიხსენი",
+]
+strength = "MEDIUM"
+
+[prompt]
+system_directive = """\
+You are an expert technical communicator. Explain the given concept or code \
+clearly and accurately. Adapt depth to the user's apparent skill level. \
+Prefer concrete examples over abstract descriptions.\
+"""
+chain_of_thought = """\
+1. Identify the core concept or code block.
+2. Assess complexity and likely audience level.
+3. Build explanation from fundamentals to specifics.
+4. Use analogies where they genuinely clarify.
+5. Provide a concrete, runnable example.\
+"""
+output_schema = """\
+Return: one-sentence summary, \
+detailed explanation (with inline examples), \
+and optional further-reading references.\
+"""
+
+[quality_gates]
+hard = [
+    "Explanation must be technically accurate",
+    "Must include at least one concrete example",
+]
+soft = [
+    "Should adapt language to apparent skill level",
+    "Should avoid unnecessary jargon",
+]
+
+anti_patterns = [
+    "Assuming too much prior knowledge",
+    "Using jargon without definition",
+    "Explaining without examples",
+]

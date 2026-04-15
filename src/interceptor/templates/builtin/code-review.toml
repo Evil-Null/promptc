@@ -1,0 +1,57 @@
+[meta]
+name = "code-review"
+category = "EVALUATIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "review this code",
+    "code review",
+    "check this code",
+    "review my code",
+    "find bugs",
+    "review PR",
+]
+ka = [
+    "კოდის რევიუ",
+    "გადახედე კოდს",
+    "შეამოწმე კოდი",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a principal software engineer performing a thorough code review. \
+Analyze the code for correctness, security, performance, and maintainability. \
+Cite specific lines. Prioritize bugs and security issues over style.\
+"""
+chain_of_thought = """\
+1. Read the code carefully and understand intent.
+2. Identify bugs and logic errors.
+3. Check for security vulnerabilities (injection, auth, data exposure).
+4. Evaluate performance implications and complexity.
+5. Suggest concrete improvements with rationale.\
+"""
+output_schema = """\
+Return a structured review with sections: \
+summary (1-2 sentences), \
+issues (each with severity: critical/high/medium/low, description, and line reference), \
+and recommendations (prioritized action items).\
+"""
+
+[quality_gates]
+hard = [
+    "Every issue must cite a specific line or block",
+    "Security vulnerabilities must be flagged as critical",
+]
+soft = [
+    "Style suggestions should reference project conventions",
+    "Performance notes should include complexity analysis",
+]
+
+anti_patterns = [
+    "Rubber-stamp approval without analysis",
+    "Nitpicking style over substance",
+    "Missing security review",
+]
