@@ -21,12 +21,57 @@ OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
 REQUEST_TIMEOUT = 120.0
 
+_OAUTH_TOKEN_PREFIX = "sk-ant-oat01-"
+_CLAUDE_OAUTH_BETAS = "prompt-caching-2024-07-31,oauth-2025-04-20"
+_CC_BILLING_HEADER = (
+    "x-anthropic-billing-header: cc_version=2.1.63.0a5;"
+    " cc_entrypoint=cli; cch=00000;"
+)
+
 
 def _get_api_key(env_var: str, backend: str) -> str:
     key = os.environ.get(env_var, "")
     if not key:
         raise MissingApiKeyError(env_var, backend)
     return key
+
+
+def _is_oauth_token(api_key: str) -> bool:
+    """Return True if the key is a Claude OAuth/setup token."""
+    return api_key.startswith(_OAUTH_TOKEN_PREFIX)
+
+
+def _build_claude_headers(api_key: str) -> dict[str, str]:
+    """Build appropriate headers based on API key type."""
+    if _is_oauth_token(api_key):
+        return {
+            "Authorization": f"Bearer {api_key}",
+            "anthropic-version": CLAUDE_API_VERSION,
+            "anthropic-beta": _CLAUDE_OAUTH_BETAS,
+            "content-type": "application/json",
+        }
+    return {
+        "x-api-key": api_key,
+        "anthropic-version": CLAUDE_API_VERSION,
+        "content-type": "application/json",
+    }
+
+
+def _inject_billing_attribution(payload: dict, api_key: str) -> dict:
+    """Prepend billing attribution to system prompt for OAuth tokens."""
+    if not _is_oauth_token(api_key):
+        return payload
+    payload = {**payload}  # shallow copy
+    system = payload.get("system", "")
+    if isinstance(system, str):
+        payload["system"] = (
+            f"{_CC_BILLING_HEADER}\n{system}" if system else _CC_BILLING_HEADER
+        )
+    elif isinstance(system, list):
+        payload["system"] = [
+            {"type": "text", "text": _CC_BILLING_HEADER},
+        ] + system
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -41,12 +86,8 @@ def send_claude(
 ) -> ExecutionResult:
     """Send a non-streaming request to Claude Messages API."""
     api_key = _get_api_key("ANTHROPIC_API_KEY", "claude")
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": CLAUDE_API_VERSION,
-        "content-type": "application/json",
-    }
-    send_payload = {**payload, "stream": False}
+    headers = _build_claude_headers(api_key)
+    send_payload = _inject_billing_attribution({**payload, "stream": False}, api_key)
 
     owns_client = client is None
     if owns_client:
@@ -132,12 +173,8 @@ def stream_claude(
 ) -> Iterator[StreamEvent]:
     """Stream a request to Claude Messages API, yielding normalized events."""
     api_key = _get_api_key("ANTHROPIC_API_KEY", "claude")
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": CLAUDE_API_VERSION,
-        "content-type": "application/json",
-    }
-    send_payload = {**payload, "stream": True}
+    headers = _build_claude_headers(api_key)
+    send_payload = _inject_billing_attribution({**payload, "stream": True}, api_key)
 
     owns_client = client is None
     if owns_client:

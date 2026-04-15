@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-green.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-1257%20passed-brightgreen.svg)](#test-suite)
+[![Tests](https://img.shields.io/badge/tests-1278%20passed-brightgreen.svg)](#test-suite)
 
 ---
 
@@ -82,8 +82,25 @@ pip install -e ".[dev]"
 # Verify
 mycli version          # → 1.1.0
 mycli health --strict  # → all checks pass
-pytest -q              # → 1257 passed
+pytest -q              # → 1278 passed
 ```
+
+## Authentication
+
+Set your backend API key as an environment variable:
+
+```bash
+# Standard API key
+export ANTHROPIC_API_KEY="sk-ant-api03-..."
+
+# Claude setup token (OAuth) — auto-detected by prefix
+export ANTHROPIC_API_KEY="sk-ant-oat01-..."
+
+# OpenAI
+export OPENAI_API_KEY="sk-..."
+```
+
+**Setup token auto-detection:** If the key starts with `sk-ant-oat01-`, promptc automatically switches to OAuth mode — `Authorization: Bearer` header, `oauth-2025-04-20` beta, and billing attribution injected into the system prompt. Standard API keys use `x-api-key` header as usual. No extra configuration needed.
 
 ## CLI Reference
 
@@ -180,9 +197,9 @@ src/interceptor/
 
 | Metric | Value |
 |---|---|
-| Total tests | **1257** |
+| Total tests | **1278** |
 | Failures | **0** |
-| Test files | 58 |
+| Test files | 59 |
 | Production files | 57 |
 | Production lines | ~6,600 |
 
