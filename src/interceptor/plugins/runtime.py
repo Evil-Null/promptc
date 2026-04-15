@@ -4,12 +4,43 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import threading
 import types
 from pathlib import Path
 from typing import Any
 
 from interceptor.plugins.context import PluginContext
 from interceptor.plugins.models import DiscoveredPlugin, VALID_HOOKS_V1
+
+HOOK_TIMEOUT_SECONDS: int = 5
+
+
+class _HookTimeoutError(Exception):
+    """Internal: raised when a plugin hook exceeds the time limit."""
+
+
+def _call_with_timeout(fn: Any, *args: Any) -> Any:
+    """Execute *fn* in a daemon thread with HOOK_TIMEOUT_SECONDS hard limit."""
+    result_box: list[Any] = [None]
+    error_box: list[BaseException | None] = [None]
+
+    def _target() -> None:
+        try:
+            result_box[0] = fn(*args)
+        except BaseException as exc:
+            error_box[0] = exc
+
+    thread = threading.Thread(target=_target, daemon=True)
+    thread.start()
+    thread.join(timeout=HOOK_TIMEOUT_SECONDS)
+
+    if thread.is_alive():
+        raise _HookTimeoutError
+
+    if error_box[0] is not None:
+        raise error_box[0]
+
+    return result_box[0]
 
 
 class LoadedPlugin:
@@ -159,7 +190,17 @@ class PluginRunner:
                 continue
 
             try:
-                result = hook_fn(current_value, *rest_args, plugin.context)
+                result = _call_with_timeout(
+                    hook_fn, current_value, *rest_args, plugin.context,
+                )
+            except _HookTimeoutError:
+                print(
+                    f"⚠️  Plugin {plugin.name}: hook {hook_name} timed out "
+                    f"after {HOOK_TIMEOUT_SECONDS}s",
+                    file=sys.stderr,
+                )
+                plugin.disabled = True
+                continue
             except Exception as exc:
                 print(
                     f"⚠️  Plugin {plugin.name}: hook {hook_name} raised "
