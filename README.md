@@ -2,7 +2,7 @@
 
 > Universal CLI middleware that intercepts user input, classifies intent, injects optimized prompt templates, and returns structured responses.
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-green.svg)](pyproject.toml)
 [![Tests](https://img.shields.io/badge/tests-1278%20passed-brightgreen.svg)](#test-suite)

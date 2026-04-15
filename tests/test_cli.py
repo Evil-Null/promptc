@@ -16,7 +16,7 @@ class TestVersion:
     def test_prints_version(self) -> None:
         result = runner.invoke(app, ["version"])
         assert result.exit_code == 0
-        assert "1.1.0" in result.output
+        assert "1.2.0" in result.output
 
 
 class TestHelp:

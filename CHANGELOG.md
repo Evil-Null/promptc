@@ -5,6 +5,21 @@ All notable changes to the **Prompt Compiler** (`promptc`) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2025-07-16
+
+### Added
+
+- **`.env` file support** — `python-dotenv` integration for environment variable management
+- **`.env.example`** — committed template showing all supported API key formats
+- **Claude OAuth/Setup Token auth** — auto-detects `sk-ant-oat01-*` tokens, uses Bearer auth + billing attribution
+- **Billing attribution injection** — required for Sonnet/Opus access with OAuth tokens
+
+### Fixed
+
+- **`run` command crash** — `decision.template` → `decision.template_name` (RouteResult attribute fix)
+- **`--json` output crash** — `FreeformValidator` returned string status instead of `ValidationStatus` enum
+- **`.gitignore`** — `.env` excluded from version control
+
 ## [1.1.0] — 2025-07-16
 
 Post-audit quality pass addressing all findings from comprehensive 3-agent audit.
