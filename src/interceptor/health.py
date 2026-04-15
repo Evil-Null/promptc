@@ -202,3 +202,51 @@ def check_compilation_valid() -> HealthCheckResult:
         status="pass",
         message=f"All {total_checks} template×level combinations compile OK.",
     )
+
+
+def check_backends_valid() -> HealthCheckResult:
+    """Verify backend registry integrity without network calls.
+
+    Checks that every registered backend has an adapter, capability values
+    are sane, and default temperatures are within declared range.
+    """
+    from interceptor.adapters.registry import list_backend_capabilities
+    from interceptor.adapters.service import _ADAPTERS
+
+    failures: list[str] = []
+    capabilities = list_backend_capabilities()
+
+    if not capabilities:
+        return HealthCheckResult(
+            name="backends_valid",
+            status="fail",
+            message="No backends registered.",
+        )
+
+    for cap in capabilities:
+        if cap.name not in _ADAPTERS:
+            failures.append(f"{cap.name}: no adapter registered")
+        if cap.max_tokens <= 0:
+            failures.append(f"{cap.name}: max_tokens={cap.max_tokens} invalid")
+        if not (
+            cap.temperature_range.minimum
+            <= cap.default_temperature
+            <= cap.temperature_range.maximum
+        ):
+            failures.append(
+                f"{cap.name}: default_temperature {cap.default_temperature} "
+                f"outside [{cap.temperature_range.minimum}, {cap.temperature_range.maximum}]"
+            )
+
+    if failures:
+        return HealthCheckResult(
+            name="backends_valid",
+            status="fail",
+            message=f"Backend issues: {'; '.join(failures)}",
+        )
+
+    return HealthCheckResult(
+        name="backends_valid",
+        status="pass",
+        message=f"All {len(capabilities)} backend(s) valid with adapters.",
+    )

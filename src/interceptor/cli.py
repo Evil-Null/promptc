@@ -14,6 +14,7 @@ from rich.table import Table
 from interceptor.constants import VERSION
 from interceptor.health import (
     HealthCheckResult,
+    check_backends_valid,
     check_compilation_valid,
     check_config_valid,
     check_routing_valid,
@@ -37,6 +38,7 @@ _HEALTH_CHECKS: dict[str, Callable[..., HealthCheckResult]] = {
     "templates_valid": check_templates_valid,
     "routing_valid": check_routing_valid,
     "compilation_valid": check_compilation_valid,
+    "backends_valid": check_backends_valid,
 }
 
 _STATUS_STYLE: dict[str, str] = {
@@ -290,6 +292,116 @@ def compile_cmd(
     console.print(table)
 
     console.print("[dim]Dry-run only — no backend calls made[/dim]")
+
+
+# ---------------------------------------------------------------------------
+# Backend sub-commands
+# ---------------------------------------------------------------------------
+
+backend_app = typer.Typer(
+    name="backend",
+    help="Inspect registered backend adapters.",
+    no_args_is_help=True,
+)
+app.add_typer(backend_app, name="backend")
+
+
+@backend_app.command(name="list")
+def backend_list(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """List all registered backends and their capabilities."""
+    import json as json_mod
+
+    from interceptor.adapters.registry import list_backend_capabilities
+
+    caps = list_backend_capabilities()
+
+    if json_output:
+        rows = [
+            {
+                "name": c.name.value,
+                "max_tokens": c.max_tokens,
+                "supports_system_prompt": c.supports_system_prompt,
+                "supports_structured_output": c.supports_structured_output,
+                "supports_streaming": c.supports_streaming,
+                "temperature_range": [
+                    c.temperature_range.minimum,
+                    c.temperature_range.maximum,
+                ],
+                "default_temperature": c.default_temperature,
+            }
+            for c in caps
+        ]
+        print(json_mod.dumps(rows, indent=2))
+        return
+
+    table = Table(title="Registered Backends", show_lines=True)
+    table.add_column("Name", style="bold")
+    table.add_column("Max Tokens", justify="right")
+    table.add_column("System Prompt")
+    table.add_column("Structured Output")
+    table.add_column("Streaming")
+    table.add_column("Temp Range")
+
+    for c in caps:
+        table.add_row(
+            c.name.value,
+            f"{c.max_tokens:,}",
+            "✅" if c.supports_system_prompt else "❌",
+            "✅" if c.supports_structured_output else "❌",
+            "✅" if c.supports_streaming else "❌",
+            f"[{c.temperature_range.minimum}, {c.temperature_range.maximum}]",
+        )
+
+    console.print(table)
+
+
+@backend_app.command(name="inspect")
+def backend_inspect(
+    name: str = typer.Argument(help="Backend name (e.g. 'claude', 'gpt')."),
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Show detailed capability info for a single backend."""
+    import json as json_mod
+
+    from interceptor.adapters.registry import get_backend_capability
+
+    try:
+        cap = get_backend_capability(name)
+    except ValueError as exc:
+        console.print(f"[red]Error: {exc}[/red]")
+        raise typer.Exit(code=1) from None
+
+    data = {
+        "name": cap.name.value,
+        "max_tokens": cap.max_tokens,
+        "supports_system_prompt": cap.supports_system_prompt,
+        "supports_structured_output": cap.supports_structured_output,
+        "supports_streaming": cap.supports_streaming,
+        "temperature_range": [
+            cap.temperature_range.minimum,
+            cap.temperature_range.maximum,
+        ],
+        "default_temperature": cap.default_temperature,
+    }
+
+    if json_output:
+        print(json_mod.dumps(data, indent=2))
+        return
+
+    table = Table(title=f"Backend: {cap.name.value}", show_lines=True)
+    table.add_column("Property", style="bold")
+    table.add_column("Value")
+    for key, value in data.items():
+        table.add_row(key, str(value))
+    console.print(table)
 
 
 def main() -> None:
