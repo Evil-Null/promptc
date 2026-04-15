@@ -1,3 +1,9 @@
+anti_patterns = [
+    "Generic security advice without specific findings",
+    "Missing authentication/authorization review",
+    "Ignoring input validation",
+]
+
 [meta]
 name = "security-audit"
 category = "EVALUATIVE"
@@ -49,10 +55,4 @@ hard = [
 soft = [
     "Should assess both application and infrastructure security",
     "Should include dependency audit results",
-]
-
-anti_patterns = [
-    "Generic security advice without specific findings",
-    "Missing authentication/authorization review",
-    "Ignoring input validation",
 ]

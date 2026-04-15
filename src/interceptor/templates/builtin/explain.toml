@@ -1,3 +1,9 @@
+anti_patterns = [
+    "Assuming too much prior knowledge",
+    "Using jargon without definition",
+    "Explaining without examples",
+]
+
 [meta]
 name = "explain"
 category = "COMMUNICATIVE"
@@ -47,10 +53,4 @@ hard = [
 soft = [
     "Should adapt language to apparent skill level",
     "Should avoid unnecessary jargon",
-]
-
-anti_patterns = [
-    "Assuming too much prior knowledge",
-    "Using jargon without definition",
-    "Explaining without examples",
 ]

@@ -1,3 +1,9 @@
+anti_patterns = [
+    "Monolithic design without justification",
+    "Ignoring operational concerns",
+    "Over-engineering for current scale",
+]
+
 [meta]
 name = "architecture"
 category = "CONSTRUCTIVE"
@@ -49,10 +55,4 @@ hard = [
 soft = [
     "Should include capacity estimates",
     "Should reference industry patterns (CQRS, event sourcing, etc.)",
-]
-
-anti_patterns = [
-    "Monolithic design without justification",
-    "Ignoring operational concerns",
-    "Over-engineering for current scale",
 ]

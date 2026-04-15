@@ -1,3 +1,9 @@
+anti_patterns = [
+    "Rubber-stamp approval without analysis",
+    "Nitpicking style over substance",
+    "Missing security review",
+]
+
 [meta]
 name = "code-review"
 category = "EVALUATIVE"
@@ -48,10 +54,4 @@ hard = [
 soft = [
     "Style suggestions should reference project conventions",
     "Performance notes should include complexity analysis",
-]
-
-anti_patterns = [
-    "Rubber-stamp approval without analysis",
-    "Nitpicking style over substance",
-    "Missing security review",
 ]
