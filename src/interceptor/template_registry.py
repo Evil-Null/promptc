@@ -32,6 +32,10 @@ class TemplateRegistry:
         """Return a template by name, or None."""
         return self._templates.get(name)
 
+    def all_templates(self) -> list[Template]:
+        """Return all loaded templates (unsorted, for internal indexing)."""
+        return list(self._templates.values())
+
     def list_all(self) -> list[Template]:
         """Return all loaded templates (sorted by name for determinism)."""
         return sorted(self._templates.values(), key=lambda t: t.meta.name)
