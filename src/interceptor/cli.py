@@ -558,7 +558,12 @@ def run(
     from interceptor.adapters.selector import select_backend
     from interceptor.adapters.service import AdapterService
     from interceptor.config import load_config
-    from interceptor.plugins.integration import compile_with_plugins, route_with_plugins
+    from interceptor.plugins.integration import (
+        compile_with_plugins,
+        execute_stream_with_plugins,
+        execute_with_plugins,
+        route_with_plugins,
+    )
     from interceptor.template_registry import TemplateRegistry
 
     if stream and json_output:
@@ -646,7 +651,8 @@ def run(
     if stream:
         # Streaming execution path — progressive terminal passthrough.
         try:
-            events = service.execute_stream(
+            events = execute_stream_with_plugins(
+                service=service,
                 backend=backend_name,
                 compiled_prompt=compiled,
                 temperature=0.7,
@@ -669,7 +675,8 @@ def run(
 
     start_ns = time_mod.monotonic()
     try:
-        result = service.execute_full(
+        result = execute_with_plugins(
+            service=service,
             backend=backend_name,
             compiled_prompt=compiled,
             temperature=0.7,

@@ -1,9 +1,9 @@
-"""Thin integration layer wiring plugin hooks into compilation and routing."""
+"""Thin integration layer wiring plugin hooks into compilation, routing, and backend."""
 
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from interceptor.compilation.assembler import compile_prompt
 from interceptor.constants import PLUGINS_DIR
@@ -14,6 +14,10 @@ from interceptor.routing.router import route as _route
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import httpx
+
+    from interceptor.adapters.models import ExecutionResult, StreamEvent
+    from interceptor.adapters.service import AdapterService
     from interceptor.compilation.cache import CompiledTemplateCache
     from interceptor.compilation.models import CompiledPrompt, TokenBudget
     from interceptor.config import Config
@@ -100,3 +104,63 @@ def route_with_plugins(
     result = runner.run_hook("postroute", result)
 
     return result
+
+
+def execute_with_plugins(
+    *,
+    service: AdapterService,
+    backend: str,
+    compiled_prompt: str | CompiledPrompt,
+    temperature: float,
+    max_output_tokens: int,
+    client: httpx.Client | None = None,
+    plugins_dir: Path | None = None,
+) -> ExecutionResult:
+    """Execute non-streaming backend request with presend/postreceive hooks.
+
+    Equivalent to service.execute_full() when no plugins are present.
+    """
+    runner = build_plugin_runner(plugins_dir)
+
+    modified_prompt = runner.run_hook("presend", compiled_prompt)
+
+    result = service.execute_full(
+        backend=backend,
+        compiled_prompt=modified_prompt,
+        temperature=temperature,
+        max_output_tokens=max_output_tokens,
+        client=client,
+    )
+
+    result = runner.run_hook("postreceive", result)
+
+    return result
+
+
+def execute_stream_with_plugins(
+    *,
+    service: AdapterService,
+    backend: str,
+    compiled_prompt: str | CompiledPrompt,
+    temperature: float,
+    max_output_tokens: int,
+    client: httpx.Client | None = None,
+    plugins_dir: Path | None = None,
+) -> Iterable[StreamEvent]:
+    """Execute streaming backend request with presend hook.
+
+    Equivalent to service.execute_stream() when no plugins are present.
+    Presend modifies the compiled prompt before dispatch. Postreceive does
+    not apply to streaming (events are yielded progressively).
+    """
+    runner = build_plugin_runner(plugins_dir)
+
+    modified_prompt = runner.run_hook("presend", compiled_prompt)
+
+    return service.execute_stream(
+        backend=backend,
+        compiled_prompt=modified_prompt,
+        temperature=temperature,
+        max_output_tokens=max_output_tokens,
+        client=client,
+    )
