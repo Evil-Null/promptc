@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from interceptor.validation.gate_models import GateEvaluation
     from interceptor.validation.models import ValidationResult
+    from interceptor.validation.retry_models import RetryResult
 
 
 class BackendName(StrEnum):
@@ -91,3 +92,4 @@ class ExecutionResult:
     usage_output_tokens: int | None = None
     validation: ValidationResult | None = None
     gate_evaluation: GateEvaluation | None = None
+    retry_result: RetryResult | None = None

@@ -446,6 +446,27 @@ def _render_gate_evaluation(gate_eval: object) -> None:
             console.print(f"  [dim]- {w.gate_text}[/dim]")
 
 
+def _render_retry_result(retry: object) -> None:
+    """Print retry outcome to terminal."""
+    outcome = getattr(retry, "outcome", "not_needed")
+    attempts = getattr(retry, "attempts", 1)
+    same_failure = getattr(retry, "same_failure_stopped", False)
+
+    if str(outcome) == "recovered":
+        console.print(
+            f"[green]✓ recovered after {attempts} attempt(s)[/green]"
+        )
+    elif str(outcome) == "exhausted":
+        if same_failure:
+            console.print(
+                f"[yellow]⚠ retry stopped (same failure) after {attempts} attempt(s)[/yellow]"
+            )
+        else:
+            console.print(
+                f"[yellow]⚠ retry exhausted after {attempts} attempt(s)[/yellow]"
+            )
+
+
 # ---------------------------------------------------------------------------
 # Run (compile + adapt dry-run)
 # ---------------------------------------------------------------------------
@@ -634,6 +655,15 @@ def run(
                     for r in result.gate_evaluation.warnings
                 ],
             }
+        if result.retry_result and str(result.retry_result.outcome) != "not_needed":
+            data["retry"] = {
+                "attempts": result.retry_result.attempts,
+                "max_retries": result.retry_result.max_retries,
+                "outcome": str(result.retry_result.outcome),
+                "final_strictness": str(result.retry_result.final_strictness) if result.retry_result.final_strictness else None,
+                "same_failure_stopped": result.retry_result.same_failure_stopped,
+                "failure_reasons": [str(r) for r in result.retry_result.failure_reasons],
+            }
         print(json_mod.dumps(data, indent=2, ensure_ascii=False))
         return
 
@@ -650,6 +680,9 @@ def run(
         not result.gate_evaluation.hard_passed or result.gate_evaluation.warnings
     ):
         _render_gate_evaluation(result.gate_evaluation)
+
+    if result.retry_result:
+        _render_retry_result(result.retry_result)
 
 
 def main() -> None:

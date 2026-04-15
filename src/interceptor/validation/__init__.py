@@ -11,11 +11,21 @@ from interceptor.validation.models import (
     ValidationStatus,
 )
 from interceptor.validation.registry import infer_format, validate_output
+from interceptor.validation.retry_models import (
+    FailureCategory,
+    RetryOutcome,
+    RetryResult,
+    StrictnessLevel,
+)
 
 __all__ = [
+    "FailureCategory",
     "GateEvaluation",
     "GateResult",
     "GateSeverity",
+    "RetryOutcome",
+    "RetryResult",
+    "StrictnessLevel",
     "ValidationIssue",
     "ValidationResult",
     "ValidationStatus",
