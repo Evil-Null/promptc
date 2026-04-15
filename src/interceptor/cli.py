@@ -904,43 +904,11 @@ def rotate(
         console.print(f"  Skipped    : {result.skipped_files} non-log files")
 
 
-@logs_app.command()
-def search(
-    template: Annotated[
-        Optional[str],
-        typer.Option("--template", help="Filter by selected template."),
-    ] = None,
-    since: Annotated[
-        Optional[str],
-        typer.Option("--since", help="Time window, e.g. 30m, 1h, 7d."),
-    ] = None,
-    limit: Annotated[
-        int,
-        typer.Option("--limit", help="Max results (newest first)."),
-    ] = 50,
-    json_output: Annotated[
-        bool,
-        typer.Option("--json", help="Output as JSON."),
-    ] = False,
+def _render_log_results(
+    results: list[dict], *, json_output: bool, title: str,
 ) -> None:
-    """Search decision log records."""
+    """Shared rendering for log result commands."""
     import json as json_mod
-
-    from interceptor.constants import LOG_DIR
-    from interceptor.observability.log_search import parse_since as _parse_since
-    from interceptor.observability.log_search import search_logs
-
-    since_td = None
-    if since is not None:
-        since_td = _parse_since(since)
-        if since_td is None:
-            console.print(f"[red]Invalid --since format:[/red] {since}")
-            console.print("Expected: 30m, 1h, 24h, 7d")
-            raise typer.Exit(code=1)
-
-    results = search_logs(
-        LOG_DIR, template=template, since=since_td, limit=limit,
-    )
 
     if json_output:
         print(json_mod.dumps(results, indent=2, ensure_ascii=False))
@@ -973,8 +941,127 @@ def search(
         out_s = f"[{style}]{out}[/{style}]" if style else out
         table.add_row(ts, tpl, bk, out_s, et_s, method, conf_s)
 
-    console.print(f"[bold]Search results[/bold] ({len(results)} records)")
+    console.print(f"[bold]{title}[/bold] ({len(results)} records)")
     console.print(table)
+
+
+@logs_app.command()
+def search(
+    template: Annotated[
+        Optional[str],
+        typer.Option("--template", help="Filter by selected template."),
+    ] = None,
+    since: Annotated[
+        Optional[str],
+        typer.Option("--since", help="Time window, e.g. 30m, 1h, 7d."),
+    ] = None,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", help="Max results (newest first)."),
+    ] = 50,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Search decision log records."""
+    from interceptor.constants import LOG_DIR
+    from interceptor.observability.log_search import parse_since as _parse_since
+    from interceptor.observability.log_search import search_logs
+
+    since_td = None
+    if since is not None:
+        since_td = _parse_since(since)
+        if since_td is None:
+            console.print(f"[red]Invalid --since format:[/red] {since}")
+            console.print("Expected: 30m, 1h, 24h, 7d")
+            raise typer.Exit(code=1)
+
+    results = search_logs(
+        LOG_DIR, template=template, since=since_td, limit=limit,
+    )
+    _render_log_results(results, json_output=json_output, title="Search results")
+
+
+@logs_app.command()
+def today(
+    template: Annotated[
+        Optional[str],
+        typer.Option("--template", help="Filter by selected template."),
+    ] = None,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", help="Max results (newest first)."),
+    ] = 50,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Show decision log records from the last 24 hours."""
+    from datetime import timedelta
+
+    from interceptor.constants import LOG_DIR
+    from interceptor.observability.log_search import search_logs
+
+    results = search_logs(
+        LOG_DIR, template=template, since=timedelta(days=1), limit=limit,
+    )
+    _render_log_results(results, json_output=json_output, title="Today")
+
+
+@logs_app.command()
+def week(
+    template: Annotated[
+        Optional[str],
+        typer.Option("--template", help="Filter by selected template."),
+    ] = None,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", help="Max results (newest first)."),
+    ] = 50,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Show decision log records from the last 7 days."""
+    from datetime import timedelta
+
+    from interceptor.constants import LOG_DIR
+    from interceptor.observability.log_search import search_logs
+
+    results = search_logs(
+        LOG_DIR, template=template, since=timedelta(days=7), limit=limit,
+    )
+    _render_log_results(results, json_output=json_output, title="This week")
+
+
+@logs_app.command()
+def month(
+    template: Annotated[
+        Optional[str],
+        typer.Option("--template", help="Filter by selected template."),
+    ] = None,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", help="Max results (newest first)."),
+    ] = 50,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Output as JSON."),
+    ] = False,
+) -> None:
+    """Show decision log records from the last 30 days."""
+    from datetime import timedelta
+
+    from interceptor.constants import LOG_DIR
+    from interceptor.observability.log_search import search_logs
+
+    results = search_logs(
+        LOG_DIR, template=template, since=timedelta(days=30), limit=limit,
+    )
+    _render_log_results(results, json_output=json_output, title="This month")
 
 
 @app.command()
