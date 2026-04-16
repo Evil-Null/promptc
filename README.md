@@ -213,6 +213,8 @@ src/interceptor/
 ├── cli.py                    # Typer CLI with 10 commands
 ├── config.py                 # TOML config with XDG paths
 ├── constants.py              # VERSION, paths, defaults
+├── core.py                   # PromptCompilerCore — stateful orchestrator for MCP
+├── mcp_server.py             # FastMCP server — 4 tools, stdio transport
 ├── health.py                 # 6 health checks
 ├── template_registry.py      # Builtin + custom template discovery
 ├── template_loader.py        # TOML → Template parser
@@ -230,16 +232,18 @@ src/interceptor/
 
 | Metric | Value |
 |---|---|
-| Total tests | **1278** |
+| Total tests | **1298** |
 | Failures | **0** |
-| Test files | 59 |
-| Production files | 57 |
-| Production lines | ~6,600 |
+| Test files | 61 |
+| Production files | 59 |
+| Production lines | ~6,900 |
 
 ```bash
-pytest -q                    # Full suite (~6s)
-pytest tests/test_pr33_release.py -v   # Release proof
-pytest tests/test_routing_golden.py -v # Golden dataset (28 cases)
+pytest -q                    # Full suite (~7s)
+pytest tests/test_core.py -v             # Core orchestrator tests (11)
+pytest tests/test_mcp_server.py -v       # MCP server tests (9)
+pytest tests/test_pr33_release.py -v     # Release proof
+pytest tests/test_routing_golden.py -v   # Golden dataset (28 cases)
 ```
 
 ## Development Phases
@@ -254,6 +258,7 @@ pytest tests/test_routing_golden.py -v # Golden dataset (28 cases)
 | **6. Observability** | PR-14 – PR-19 | Decision logs, metrics, prune, rotate, search, periods |
 | **7. Plugins** | PR-20 – PR-29 | Manifest, runtime, 4 pipeline hooks, timeout, install |
 | **8. Release** | PR-30 – PR-33 | Readiness proof, UTC fix, display alignment, v1.0.0 |
+| **9. MCP Integration** | PR-34 | MCP server, Core orchestrator, 4 tools, Copilot CLI support |
 
 > Full history: [CHANGELOG.md](CHANGELOG.md)
 
