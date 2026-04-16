@@ -5,6 +5,29 @@ All notable changes to the **Prompt Compiler** (`promptc`) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] — 2025-07-17
+
+### Added
+
+- **MCP Server integration** — `promptc` now works as a Model Context Protocol server, enabling direct use from Copilot CLI and any MCP-compatible client without terminal switching
+- **`PromptCompilerCore`** — stateful orchestrator (`src/interceptor/core.py`) with dependency injection, warm config/registry, and `__slots__` optimization
+- **4 MCP tools**: `promptc_optimize` (primary — returns enhanced system prompt), `promptc_route` (routing diagnostic), `promptc_templates` (template discovery), `promptc_reload` (hot reload)
+- **`promptc-mcp` entry point** — globally installable via `pipx install prompt-compiler[mcp]`
+- **Optional `mcp` dependency group** — `mcp>=1.0.0,<2.0.0` (starlette/uvicorn/anyio not required for CLI-only users)
+- **20 new tests** — 11 for `PromptCompilerCore`, 9 for MCP server tools (async via pytest-anyio)
+
+### Architecture Decisions
+
+- **No Double LLM antipattern** — MCP server makes zero API calls; `promptc_optimize` returns compiled prompt text for the host LLM's own context
+- **`asyncio.to_thread()`** wraps all sync pipeline calls — prevents 50-120ms event loop blocking
+- **`logging.basicConfig(stream=sys.stderr)`** — protects stdout (MCP JSON-RPC protocol channel)
+- **Lazy singleton `_core`** — loaded on first tool call, not on import
+
+### Stats
+
+- Tests: 1278 → 1298 (+20 new, zero regressions)
+- New files: 4 (`core.py`, `mcp_server.py`, `test_core.py`, `test_mcp_server.py`)
+
 ## [1.2.0] — 2025-07-16
 
 ### Added

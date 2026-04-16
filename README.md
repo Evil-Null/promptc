@@ -2,10 +2,10 @@
 
 > Universal CLI middleware that intercepts user input, classifies intent, injects optimized prompt templates, and returns structured responses.
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-green.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-1278%20passed-brightgreen.svg)](#test-suite)
+[![Tests](https://img.shields.io/badge/tests-1298%20passed-brightgreen.svg)](#test-suite)
 
 ---
 
@@ -80,10 +80,43 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 # Verify
-mycli version          # → 1.1.0
+mycli version          # → 1.3.0
 mycli health --strict  # → all checks pass
-pytest -q              # → 1278 passed
+pytest -q              # → 1298 passed
 ```
+
+## MCP Server (Copilot CLI Integration)
+
+`promptc` works as an **MCP (Model Context Protocol) server** — use it directly from GitHub Copilot CLI, Cursor, or any MCP-compatible client without terminal switching.
+
+### Setup
+
+```bash
+# Install with MCP support
+pipx install "prompt-compiler[mcp]"
+
+# Register in Copilot CLI
+# Add to ~/.copilot/config.json:
+{
+  "mcpServers": {
+    "promptc": {
+      "command": "promptc-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+### MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `promptc_optimize` ⭐ | Compile an optimized system prompt — the AI uses it as context for its own response |
+| `promptc_route` | Routing analysis: which template matches, confidence score, zone |
+| `promptc_templates` | List all available templates with metadata |
+| `promptc_reload` | Hot-reload config, templates, and plugins without restarting |
+
+**Design**: The MCP server makes **zero API calls** — it returns compiled prompt text for the host LLM's own context. No double-LLM overhead.
 
 ## Authentication
 

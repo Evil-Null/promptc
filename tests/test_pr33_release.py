@@ -20,13 +20,13 @@ class TestVersionConsistency:
     def test_constants_version(self):
         from interceptor.constants import VERSION
 
-        assert VERSION == "1.2.0"
+        assert VERSION == "1.3.0"
 
     def test_pyproject_version(self):
         text = (ROOT / "pyproject.toml").read_text()
         match = re.search(r'^version\s*=\s*"(.+?)"', text, re.MULTILINE)
         assert match is not None
-        assert match.group(1) == "1.2.0"
+        assert match.group(1) == "1.3.0"
 
     def test_cli_version_output(self):
         from typer.testing import CliRunner
@@ -35,7 +35,7 @@ class TestVersionConsistency:
 
         result = CliRunner().invoke(app, ["version"])
         assert result.exit_code == 0
-        assert "1.2.0" in result.output
+        assert "1.3.0" in result.output
 
 
 # ── B: Release artifacts exist ───────────────────────────────────────

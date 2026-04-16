@@ -33,7 +33,7 @@ class TestMainEntry:
             timeout=10,
         )
         assert result.returncode == 0
-        assert "1.2.0" in result.stdout
+        assert "1.3.0" in result.stdout
 
 
 class TestCodeQualityFixes:
