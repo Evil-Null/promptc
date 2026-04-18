@@ -1250,6 +1250,60 @@ def plugins(
     console.print(table)
 
 
+@app.command()
+def setup() -> None:
+    """Auto-configure promptc: register MCP server in Copilot CLI config.
+
+    Detects the Copilot CLI config file, registers promptc-mcp as an MCP
+    server, and verifies the installation. Run once after ``pipx install``.
+    """
+    import shutil
+
+    from interceptor.constants import VERSION
+    from interceptor.mcp_server import _find_copilot_config, register_in_copilot
+
+    console.print(f"\n[bold]promptc setup[/bold] v{VERSION}\n")
+
+    # Step 1: Check binary
+    binary = shutil.which("promptc-mcp")
+    if binary:
+        console.print(f"  [green]✅[/green] Binary: {binary}")
+    else:
+        console.print("  [red]❌[/red] promptc-mcp not found in PATH")
+        console.print("     Run: pipx install prompt-compiler[mcp]")
+        raise typer.Exit(1)
+
+    # Step 2: Check templates
+    try:
+        from interceptor.core import PromptCompilerCore
+
+        core = PromptCompilerCore()
+        tpls = core.templates()
+        console.print(f"  [green]✅[/green] Templates: {len(tpls)} loaded")
+    except Exception as exc:
+        console.print(f"  [red]❌[/red] Templates: {exc}")
+        raise typer.Exit(1)
+
+    # Step 3: Register in Copilot CLI
+    copilot_config = _find_copilot_config()
+    ok, msg = register_in_copilot(copilot_config)
+    if ok:
+        console.print(f"  [green]✅[/green] Copilot CLI: {msg}")
+    else:
+        console.print(f"  [red]❌[/red] Copilot CLI: {msg}")
+        raise typer.Exit(1)
+
+    # Step 4: Verify MCP protocol
+    try:
+        result = core.route("review this code")
+        console.print(f"  [green]✅[/green] Routing: zone={result.zone.value}")
+    except Exception as exc:
+        console.print(f"  [yellow]⚠️[/yellow]  Routing: {exc}")
+
+    console.print("\n[bold green]✅ Setup complete![/bold green]")
+    console.print("   Restart Copilot CLI to activate promptc MCP tools.\n")
+
+
 def main() -> None:
     """Console script entry point."""
     from dotenv import load_dotenv
