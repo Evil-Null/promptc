@@ -15,27 +15,31 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestVersionConsistency:
-    """Version string 1.0.0 in all canonical locations."""
+    """Version string consistent across all canonical locations."""
 
     def test_constants_version(self):
         from interceptor.constants import VERSION
 
-        assert VERSION == "1.3.0"
+        # VERSION is the single source of truth — just verify it's a valid semver
+        assert re.match(r"^\d+\.\d+\.\d+", VERSION)
 
     def test_pyproject_version(self):
+        from interceptor.constants import VERSION
+
         text = (ROOT / "pyproject.toml").read_text()
         match = re.search(r'^version\s*=\s*"(.+?)"', text, re.MULTILINE)
         assert match is not None
-        assert match.group(1) == "1.3.0"
+        assert match.group(1) == VERSION
 
     def test_cli_version_output(self):
         from typer.testing import CliRunner
 
         from interceptor.cli import app
+        from interceptor.constants import VERSION
 
         result = CliRunner().invoke(app, ["version"])
         assert result.exit_code == 0
-        assert "1.3.0" in result.output
+        assert VERSION in result.output
 
 
 # ── B: Release artifacts exist ───────────────────────────────────────

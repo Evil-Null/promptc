@@ -14,9 +14,11 @@ runner = CliRunner()
 
 class TestVersion:
     def test_prints_version(self) -> None:
+        from interceptor.constants import VERSION
+
         result = runner.invoke(app, ["version"])
         assert result.exit_code == 0
-        assert "1.3.0" in result.output
+        assert VERSION in result.output
 
 
 class TestHelp:

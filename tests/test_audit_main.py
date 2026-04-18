@@ -26,6 +26,8 @@ class TestMainEntry:
         assert "main()" in content
 
     def test_python_m_interceptor_version(self) -> None:
+        from interceptor.constants import VERSION
+
         result = subprocess.run(
             [str(VENV_PYTHON), "-m", "interceptor", "version"],
             capture_output=True,
@@ -33,7 +35,7 @@ class TestMainEntry:
             timeout=10,
         )
         assert result.returncode == 0
-        assert "1.3.0" in result.stdout
+        assert VERSION in result.stdout
 
 
 class TestCodeQualityFixes:

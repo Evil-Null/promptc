@@ -2,7 +2,7 @@
 
 > Universal prompt compilation engine — routes your intent to the best template, compiles token-budgeted prompts with adversarial-resistant delimiters, and enhances any AI's output quality.
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-green.svg)](pyproject.toml)
 [![Tests](https://img.shields.io/badge/tests-1312%20passed-brightgreen.svg)](#test-suite)
@@ -107,7 +107,7 @@ Restart your client. Done. Now when you ask Copilot to "review this code for sec
 ### Diagnostic flags
 
 ```bash
-promptc-mcp --version   # Print version (e.g., promptc 1.3.0)
+promptc-mcp --version   # Print version (e.g., promptc 1.3.1)
 promptc-mcp --verify    # Full health check: version, binary, templates, routing, config
 promptc-mcp --setup     # Auto-register in Copilot CLI config
 ```
@@ -149,7 +149,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 # Verify
-mycli version          # → 1.3.0
+mycli version          # → 1.3.1
 mycli health --strict  # → all checks pass
 
 # Or use guided setup (registers MCP + verifies)
