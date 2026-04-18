@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-green.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-1298%20passed-brightgreen.svg)](#test-suite)
+[![Tests](https://img.shields.io/badge/tests-1312%20passed-brightgreen.svg)](#test-suite)
 
 ---
 
@@ -55,8 +55,37 @@ graph TB
 
 The fastest way to use promptc. No API keys needed — your AI client (Copilot, Cursor) handles the LLM calls.
 
+### Option A: One-command install (recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Evil-Null/promptc/main/install.sh | bash
+```
+
+This installs via pipx, registers in Copilot CLI config, and verifies everything works.
+
+For local development:
+
+```bash
+git clone git@github.com:Evil-Null/promptc.git && cd promptc
+./install.sh --local
+```
+
+### Option B: Manual install
+
 ```bash
 # Install
+pipx install "prompt-compiler[mcp]"
+
+# Auto-register in Copilot CLI config
+promptc-mcp --setup
+
+# Verify installation
+promptc-mcp --verify
+```
+
+### Option C: Step-by-step
+
+```bash
 pipx install "prompt-compiler[mcp]"
 ```
 
@@ -74,6 +103,14 @@ Register in your MCP client config (`~/.copilot/config.json` for Copilot CLI):
 ```
 
 Restart your client. Done. Now when you ask Copilot to "review this code for security", it automatically calls promptc to get an optimized system prompt with structured CoT, quality gates, and anti-pattern checks — then uses that enhanced prompt for its own response.
+
+### Diagnostic flags
+
+```bash
+promptc-mcp --version   # Print version (e.g., promptc 1.3.0)
+promptc-mcp --verify    # Full health check: version, binary, templates, routing, config
+promptc-mcp --setup     # Auto-register in Copilot CLI config
+```
 
 ### MCP Tools
 
@@ -114,6 +151,9 @@ pip install -e ".[dev]"
 # Verify
 mycli version          # → 1.3.0
 mycli health --strict  # → all checks pass
+
+# Or use guided setup (registers MCP + verifies)
+mycli setup
 ```
 
 ### Authentication (CLI only)
@@ -239,16 +279,17 @@ src/interceptor/
 
 | Metric | Value |
 |---|---|
-| Total tests | **1298** |
+| Total tests | **1312** |
 | Failures | **0** |
-| Test files | 61 |
+| Test files | 62 |
 | Production files | 59 |
-| Production lines | ~6,900 |
+| Production lines | ~7,100 |
 
 ```bash
 pytest -q                    # Full suite (~7s)
 pytest tests/test_core.py -v             # Core orchestrator tests (11)
 pytest tests/test_mcp_server.py -v       # MCP server tests (9)
+pytest tests/test_setup.py -v            # Setup automation tests (14)
 pytest tests/test_pr33_release.py -v     # Release proof
 pytest tests/test_routing_golden.py -v   # Golden dataset (28 cases)
 ```
