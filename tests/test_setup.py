@@ -58,14 +58,14 @@ class TestCopilotConfigHelpers:
     """Tests for Copilot config discovery and registration."""
 
     def test_find_copilot_config_returns_path(self, tmp_path: Path) -> None:
-        config = tmp_path / ".copilot" / "config.json"
+        config = tmp_path / ".copilot" / "mcp-config.json"
         config.parent.mkdir(parents=True)
         config.write_text("{}", encoding="utf-8")
 
         with patch("pathlib.Path.home", return_value=tmp_path):
             result = _find_copilot_config()
             assert result is not None
-            assert result.name == "config.json"
+            assert result.name == "mcp-config.json"
 
     def test_find_copilot_config_returns_default_when_missing(
         self, tmp_path: Path
@@ -73,10 +73,10 @@ class TestCopilotConfigHelpers:
         with patch("pathlib.Path.home", return_value=tmp_path):
             result = _find_copilot_config()
             assert result is not None
-            assert "config.json" in str(result)
+            assert "mcp-config.json" in str(result)
 
     def test_is_registered_true(self, tmp_path: Path) -> None:
-        config = tmp_path / "config.json"
+        config = tmp_path / "mcp-config.json"
         config.write_text(
             json.dumps({"mcpServers": {"promptc": {"command": "x"}}}),
             encoding="utf-8",
@@ -84,12 +84,12 @@ class TestCopilotConfigHelpers:
         assert _is_registered_in_copilot(config) is True
 
     def test_is_registered_false_empty(self, tmp_path: Path) -> None:
-        config = tmp_path / "config.json"
+        config = tmp_path / "mcp-config.json"
         config.write_text("{}", encoding="utf-8")
         assert _is_registered_in_copilot(config) is False
 
     def test_is_registered_false_no_promptc(self, tmp_path: Path) -> None:
-        config = tmp_path / "config.json"
+        config = tmp_path / "mcp-config.json"
         config.write_text(
             json.dumps({"mcpServers": {"other": {}}}),
             encoding="utf-8",
@@ -97,7 +97,7 @@ class TestCopilotConfigHelpers:
         assert _is_registered_in_copilot(config) is False
 
     def test_is_registered_handles_bad_json(self, tmp_path: Path) -> None:
-        config = tmp_path / "config.json"
+        config = tmp_path / "mcp-config.json"
         config.write_text("NOT JSON", encoding="utf-8")
         assert _is_registered_in_copilot(config) is False
 
@@ -106,7 +106,7 @@ class TestRegisterInCopilot:
     """Tests for ``register_in_copilot()``."""
 
     def test_register_creates_entry(self, tmp_path: Path) -> None:
-        config = tmp_path / "config.json"
+        config = tmp_path / "mcp-config.json"
         config.write_text("{}", encoding="utf-8")
 
         with patch("shutil.which", return_value="/usr/bin/promptc-mcp"):
@@ -118,7 +118,7 @@ class TestRegisterInCopilot:
         assert data["mcpServers"]["promptc"]["command"] == "/usr/bin/promptc-mcp"
 
     def test_register_idempotent(self, tmp_path: Path) -> None:
-        config = tmp_path / "config.json"
+        config = tmp_path / "mcp-config.json"
         config.write_text(
             json.dumps({"mcpServers": {"promptc": {"command": "old"}}}),
             encoding="utf-8",
@@ -133,7 +133,7 @@ class TestRegisterInCopilot:
         assert data["mcpServers"]["promptc"]["command"] == "old"
 
     def test_register_creates_file_if_missing(self, tmp_path: Path) -> None:
-        config = tmp_path / "subdir" / "config.json"
+        config = tmp_path / "subdir" / "mcp-config.json"
 
         with patch("shutil.which", return_value="/usr/bin/promptc-mcp"):
             ok, msg = register_in_copilot(config)
@@ -144,7 +144,7 @@ class TestRegisterInCopilot:
         assert "promptc" in data["mcpServers"]
 
     def test_register_preserves_existing_servers(self, tmp_path: Path) -> None:
-        config = tmp_path / "config.json"
+        config = tmp_path / "mcp-config.json"
         config.write_text(
             json.dumps({
                 "mcpServers": {"memory": {"command": "memory-server"}},
@@ -163,7 +163,7 @@ class TestRegisterInCopilot:
         assert data["model"] == "claude-opus-4.6"
 
     def test_register_fails_without_binary(self, tmp_path: Path) -> None:
-        config = tmp_path / "config.json"
+        config = tmp_path / "mcp-config.json"
         config.write_text("{}", encoding="utf-8")
 
         with patch("shutil.which", return_value=None):

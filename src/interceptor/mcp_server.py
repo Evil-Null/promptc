@@ -170,7 +170,7 @@ def _verify() -> int:
         registered = _is_registered_in_copilot(copilot_config)
         checks.append(("copilot_config", registered, str(copilot_config)))
     else:
-        checks.append(("copilot_config", False, "~/.copilot/config.json not found"))
+        checks.append(("copilot_config", False, "~/.copilot/mcp-config.json not found"))
 
     all_pass = all(ok for _, ok, _ in checks)
 
@@ -192,12 +192,12 @@ def _verify() -> int:
 
 
 def _find_copilot_config() -> "Path | None":
-    """Locate the Copilot CLI config.json file."""
+    """Locate the Copilot CLI MCP config file (mcp-config.json)."""
     from pathlib import Path
 
     candidates = [
-        Path.home() / ".copilot" / "config.json",
-        Path.home() / ".config" / "github-copilot" / "config.json",
+        Path.home() / ".copilot" / "mcp-config.json",
+        Path.home() / ".config" / "github-copilot" / "mcp-config.json",
     ]
     for c in candidates:
         if c.exists():
@@ -206,7 +206,7 @@ def _find_copilot_config() -> "Path | None":
 
 
 def _is_registered_in_copilot(config_path: "Path") -> bool:
-    """Check if promptc MCP server is registered in the Copilot config."""
+    """Check if promptc MCP server is registered in the Copilot MCP config."""
     try:
         data = json.loads(config_path.read_text(encoding="utf-8"))
         return "promptc" in data.get("mcpServers", {})
@@ -215,7 +215,7 @@ def _is_registered_in_copilot(config_path: "Path") -> bool:
 
 
 def register_in_copilot(config_path: "Path | None" = None) -> tuple[bool, str]:
-    """Register promptc MCP server in Copilot CLI config.json.
+    """Register promptc MCP server in Copilot CLI mcp-config.json.
 
     Returns (success, message) tuple.
     """

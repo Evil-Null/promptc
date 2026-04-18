@@ -66,7 +66,7 @@ else
 fi
 
 # --- Register in Copilot CLI ---
-COPILOT_CONFIG="$HOME/.copilot/config.json"
+COPILOT_CONFIG="$HOME/.copilot/mcp-config.json"
 BINARY_PATH=$(command -v promptc-mcp)
 
 if [ -f "$COPILOT_CONFIG" ]; then
