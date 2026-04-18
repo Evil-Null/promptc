@@ -5,6 +5,32 @@ All notable changes to the **Prompt Compiler** (`promptc`) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] — 2025-07-18
+
+### Added
+
+- **Setup automation** — one-command installation that works 100% out of the box
+- **`promptc-mcp --version`** — quick version check without starting MCP server
+- **`promptc-mcp --verify`** — comprehensive health check: version, binary, templates, routing, copilot config
+- **`promptc-mcp --setup`** — auto-register in Copilot CLI config (`~/.copilot/config.json`)
+- **`mycli setup`** — guided setup command with colorful output (install check, MCP registration, verification)
+- **`install.sh`** — one-command installer script (pipx install + config registration + verify)
+- **Copilot config helpers** — `_find_copilot_config()`, `_is_registered_in_copilot()`, `register_in_copilot()` with idempotent registration
+- **Lazy MCP loading** — CLI flags (`--version`, `--verify`, `--setup`) work without importing mcp SDK
+- **14 new tests** — `test_setup.py` covering version flag, verify, copilot config helpers, registration
+
+### Architecture Decisions
+
+- **Lazy `_get_mcp()` pattern** — `FastMCP` instance created only when MCP server actually starts, not on `--version`/`--verify`
+- **Tool functions at module-level** — `_register_tools()` decorates them lazily, keeping test imports clean
+- **Idempotent registration** — `register_in_copilot()` checks before writing, preserves existing MCP servers
+
+### Stats
+
+- Tests: 1298 → 1312 (+14 new, zero regressions)
+- New files: 2 (`install.sh`, `tests/test_setup.py`)
+- Modified: 2 (`mcp_server.py`, `cli.py`)
+
 ## [1.3.0] — 2025-07-17
 
 ### Added
