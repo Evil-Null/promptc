@@ -24,7 +24,7 @@ ka = [
     "როგორ მუშაობს",
     "ამიხსენი",
 ]
-strength = "MEDIUM"
+strength = "STRONG"
 
 [prompt]
 system_directive = """\

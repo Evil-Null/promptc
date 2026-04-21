@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from interceptor.config import RoutingConfig
 from interceptor.models.template import Template
-from interceptor.routing.index import PHRASE_BONUS, TriggerIndex, tokenize
+from interceptor.routing.index import PHRASE_BONUS, TriggerIndex, normalize_phrase, tokenize
 
 # Strength multiplier (governs how strongly the template asserts its triggers)
 _STRENGTH_MULTIPLIER: dict[str | None, float] = {
@@ -47,12 +47,12 @@ def score_triggers(
 
     template_triggers: set[str] = set()
     for phrase in template.triggers.en + template.triggers.ka:
-        normalized = phrase.strip().lower()
+        normalized = normalize_phrase(phrase)
         if normalized:
             template_triggers.add(normalized)
 
     scores: list[float] = []
-    lowered = input_text.strip().lower()
+    lowered = normalize_phrase(input_text)
 
     # --- Phase 1: phrase triggers (multi-word, higher priority) ---
     for trigger in template_triggers:

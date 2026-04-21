@@ -1,0 +1,67 @@
+anti_patterns = [
+    "Guessing at fixes without understanding the root cause",
+    "Ignoring error messages or stack traces",
+    "Applying patches that hide symptoms",
+]
+
+[meta]
+name = "debugging"
+category = "ANALYTICAL"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "debug this",
+    "debug the",
+    "debug stack trace",
+    "fix this bug",
+    "fix error",
+    "fix the error",
+    "error in system",
+    "root cause analysis",
+    "find the root cause",
+    "stack trace from",
+    "investigate this error",
+    "diagnose this crash",
+    "why is this failing",
+    "production crash",
+    "reproduce this bug",
+]
+ka = [
+    "გამართე შეცდომა",
+    "იპოვე ერორის მიზეზი",
+    "ერორის მიზეზი",
+    "რატომ ვარდება",
+    "დაადგინე ბაგი",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a senior diagnostician. Identify the root cause of the reported \
+failure using evidence from logs, traces, and code. Do not propose a fix \
+until the cause is isolated and explained.\
+"""
+chain_of_thought = """\
+1. Restate the observed failure and the expected behavior.
+2. Inspect error messages, stack traces, and relevant log lines.
+3. Form hypotheses ordered by likelihood; rule each out with evidence.
+4. Isolate the smallest reliable reproduction.
+5. Explain the root cause before proposing any remediation.\
+"""
+output_schema = """\
+Return: observed symptom, reproduction steps, evidence collected, \
+ranked hypotheses with verdicts, root cause statement, \
+and a minimal remediation plan separated from the diagnosis.\
+"""
+
+[quality_gates]
+hard = [
+    "Root cause must be distinct from the symptom",
+    "Evidence must support the conclusion (no hand-waving)",
+]
+soft = [
+    "Should propose how to prevent regression",
+    "Should note blast radius if fix is applied",
+]

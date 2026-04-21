@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from interceptor.config import Config
 from interceptor.models.template import Category, Template
-from interceptor.routing.index import build_trigger_index, tokenize
+from interceptor.routing.index import build_trigger_index, normalize_phrase, tokenize
 from interceptor.routing.models import RouteMethod, RouteResult, RouteZone
 from interceptor.routing.scoring import score_template
 from interceptor.template_registry import TemplateRegistry
@@ -39,6 +39,23 @@ _STOP_WORDS = frozenset({
     "please", "just", "some", "here", "there",
 })
 
+# Phase B3: generic nouns that contribute diluted weight when matched alone.
+# Present in trigger phrases but too broad to carry routing confidence on
+# their own (e.g. "fix error in system" must not win against "system design").
+_GENERIC_NOUNS = frozenset({
+    "system", "code", "project", "file", "files", "thing", "things",
+    "app", "application", "service", "module", "function", "class",
+})
+_GENERIC_WEIGHT: float = 0.5
+
+# Phase B2: unigram-only matches (no phrase evidence, single token overlap)
+# cannot exceed SUGGEST. Max confidence for such matches.
+_UNIGRAM_ONLY_CAP: float = 0.54
+
+# Phase B1: category-only matches (no trigger or token evidence) cannot
+# exceed SUGGEST zone. Max confidence for pure category-affinity wins.
+_CATEGORY_ONLY_CAP: float = 0.54
+
 _STRENGTH_MULT: dict[str | None, float] = {
     "STRONG": 1.0,
     "MEDIUM": 0.92,
@@ -47,6 +64,7 @@ _STRENGTH_MULT: dict[str | None, float] = {
 }
 
 _CATEGORY_KEYWORDS: dict[str, Category] = {
+    # English
     "what": Category.COMMUNICATIVE,
     "how": Category.COMMUNICATIVE,
     "why": Category.COMMUNICATIVE,
@@ -77,6 +95,24 @@ _CATEGORY_KEYWORDS: dict[str, Category] = {
     "improve": Category.TRANSFORMATIVE,
     "migrate": Category.TRANSFORMATIVE,
     "convert": Category.TRANSFORMATIVE,
+    # Georgian (Phase C — bilingual parity)
+    "ახსენი": Category.COMMUNICATIVE,
+    "ამიხსენი": Category.COMMUNICATIVE,
+    "რას": Category.COMMUNICATIVE,
+    "როგორ": Category.COMMUNICATIVE,
+    "რატომ": Category.COMMUNICATIVE,
+    "რევიუ": Category.EVALUATIVE,
+    "შეამოწმე": Category.EVALUATIVE,
+    "შემოწმება": Category.EVALUATIVE,
+    "აუდიტი": Category.EVALUATIVE,
+    "უსაფრთხოება": Category.EVALUATIVE,
+    "დიზაინი": Category.CONSTRUCTIVE,
+    "არქიტექტურა": Category.CONSTRUCTIVE,
+    "შექმენი": Category.CONSTRUCTIVE,
+    "დაგეგმე": Category.CONSTRUCTIVE,
+    "გაასწორე": Category.TRANSFORMATIVE,
+    "გადააკეთე": Category.TRANSFORMATIVE,
+    "გააუმჯობესე": Category.TRANSFORMATIVE,
 }
 
 _FILE_TYPE_DEFAULTS: dict[str, str] = {
@@ -172,25 +208,47 @@ def route(
 
     scores: dict[str, float] = {}
     fuzzy_flags: dict[str, bool] = {}
+    phrase_flags: dict[str, bool] = {}
+    cat_only_flags: dict[str, bool] = {}
+    evidence_counts: dict[str, int] = {}
 
     for t in templates:
         exact = score_template(text, t, index, rcfg)
-        tok_conf, has_fuzzy = _token_match_confidence(tokens, t)
+        tok_conf, has_fuzzy, phrase_matched, evidence = _token_match_confidence(tokens, t)
         cat_conf = _category_affinity(tokens, t.meta.category, t.triggers.strength)
 
         combined = max(exact, tok_conf) if has_fuzzy else max(exact, tok_conf, cat_conf)
 
-        if not has_fuzzy and tok_conf > 0 and cat_conf > 0:
+        # Phase B: +0.05 synergy bonus only when real phrase evidence exists —
+        # prevents unigram + category affinity from reaching CONFIRM.
+        if not has_fuzzy and tok_conf > 0 and cat_conf > 0 and phrase_matched:
             combined = min(combined + 0.05, 0.95)
+
+        # Phase B1: pure category-affinity wins cap at SUGGEST zone.
+        cat_only = (exact == 0.0 and tok_conf == 0.0 and cat_conf > 0.0)
+        if cat_only:
+            combined = min(combined, _CATEGORY_ONLY_CAP)
+
+        # Phase B2: if no multi-token phrase evidence at all, cap at SUGGEST.
+        # Applies to unigram-only + category-affinity combinations.
+        if not phrase_matched and exact == 0.0:
+            combined = min(combined, _CATEGORY_ONLY_CAP)
 
         if combined > 0:
             scores[t.meta.name] = combined
             fuzzy_flags[t.meta.name] = has_fuzzy
+            phrase_flags[t.meta.name] = phrase_matched
+            cat_only_flags[t.meta.name] = cat_only
+            evidence_counts[t.meta.name] = evidence
 
     if not scores:
         return _fallback_cascade(tokens, templates, registry, context)
 
-    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    ranked = sorted(
+        scores.items(),
+        key=lambda x: (x[1], evidence_counts.get(x[0], 0)),
+        reverse=True,
+    )
     top_name, top_score = ranked[0]
     runner_up = ranked[1] if len(ranked) > 1 else None
 
@@ -296,25 +354,31 @@ def _resolve_explicit(name: str, registry: TemplateRegistry) -> RouteResult:
 def _token_match_confidence(
     tokens: list[str],
     template: Template,
-) -> tuple[float, bool]:
-    """Return ``(confidence, has_fuzzy)`` from token overlap analysis."""
+) -> tuple[float, bool, bool, int]:
+    """Return ``(confidence, has_fuzzy, phrase_matched, evidence_count)``.
+
+    ``evidence_count`` is the number of unique significant input tokens
+    that exact-matched any trigger phrase — used as a tiebreaker when two
+    templates hit the 0.95 cap with different evidence richness.
+    """
     token_set = set(tokens)
     significant_input = token_set - _STOP_WORDS
     if not significant_input:
-        return 0.0, False
+        return 0.0, False, False, 0
 
     phrases: list[str] = []
     for p in template.triggers.en + template.triggers.ka:
-        norm = p.strip().lower()
+        norm = normalize_phrase(p)
         if norm:
             phrases.append(norm)
     if not phrases:
-        return 0.0, False
+        return 0.0, False, False, 0
 
     matched_exact: set[str] = set()
     best_overlap = 0.0
     best_exact_ratio = 0.0
     has_fuzzy = False
+    phrase_matched = False
 
     for phrase in phrases:
         ptokens = phrase.split()
@@ -324,6 +388,12 @@ def _token_match_confidence(
             continue
 
         exact = significant_input & significant_phrase
+
+        # Phase B3: dilute generic-noun-only contributions.
+        weighted_exact = sum(
+            _GENERIC_WEIGHT if tok in _GENERIC_NOUNS else 1.0
+            for tok in exact
+        )
 
         fuzzy_count = 0
         for it in significant_input - exact:
@@ -337,10 +407,16 @@ def _token_match_confidence(
                     has_fuzzy = True
                     break
 
-        exact_ratio = len(exact) / len(ptokens)
+        # Count multi-token phrase evidence: ≥2 significant overlaps
+        # (exact non-generic + fuzzy) against a single phrase.
+        non_generic_exact = {tok for tok in exact if tok not in _GENERIC_NOUNS}
+        if len(non_generic_exact) + fuzzy_count >= 2:
+            phrase_matched = True
+
+        exact_ratio = len(exact) / len(significant_phrase)
         best_exact_ratio = max(best_exact_ratio, exact_ratio)
 
-        total = len(exact) + fuzzy_count * 0.5
+        total = weighted_exact + fuzzy_count * 0.5
         if total > 0:
             ratio = total / len(ptokens)
             matched_exact.update(exact)
@@ -350,7 +426,9 @@ def _token_match_confidence(
 
     unique_count = len(matched_exact)
     if unique_count < 2 and best_overlap < 0.50:
-        return (0.0, True) if fuzzy_is_relevant else (0.0, False)
+        if fuzzy_is_relevant:
+            return 0.0, True, False, unique_count
+        return 0.0, False, False, unique_count
 
     name_tokens = set(template.meta.name.lower().replace("-", " ").split())
     all_name_present = bool(name_tokens) and name_tokens <= token_set
@@ -361,8 +439,20 @@ def _token_match_confidence(
     if all_name_present:
         signal = max(signal, 0.70)
 
+    # Broaden phrase evidence: 2+ distinct exact overlaps or full template
+    # name present in input counts as real multi-signal evidence.
+    if unique_count >= 2 or all_name_present:
+        phrase_matched = True
+
     mult = _STRENGTH_MULT.get(template.triggers.strength, 0.92)
-    return min(signal * mult, 0.95), fuzzy_is_relevant
+    raw = min(signal * mult, 0.95)
+
+    # Phase B2: unigram-only match (no multi-token phrase evidence) caps at
+    # SUGGEST zone — prevents single common word from reaching CONFIRM.
+    if not phrase_matched and unique_count <= 1 and not all_name_present:
+        raw = min(raw, _UNIGRAM_ONLY_CAP)
+
+    return raw, fuzzy_is_relevant, phrase_matched, unique_count
 
 
 # ---------------------------------------------------------------------------

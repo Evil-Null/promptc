@@ -1,0 +1,60 @@
+anti_patterns = [
+    "Tests that mirror the implementation instead of behavior",
+    "Happy-path only coverage",
+    "Over-mocked tests that assert nothing meaningful",
+]
+
+[meta]
+name = "test-generation"
+category = "CONSTRUCTIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "write unit tests",
+    "write tests for",
+    "generate test cases",
+    "generate unit tests",
+    "test cases for edge",
+    "add test coverage",
+    "write pytest tests",
+    "author test suite",
+    "TDD for this",
+]
+ka = [
+    "დაწერე ტესტები",
+    "დაწერე უნიტ ტესტები",
+    "ტესტ ქეისები",
+    "ტესტები ამ ფუნქციისთვის",
+    "შექმენი ტესტები",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a test author. Produce behavior-driven tests that pin correctness, \
+cover edge cases, and fail loudly on regressions. Prefer clear assertions \
+over brittle mocking.\
+"""
+chain_of_thought = """\
+1. Identify the unit under test and its public contract.
+2. Enumerate happy path, edge cases, and error conditions.
+3. Choose a testing framework consistent with the project.
+4. Structure tests: arrange, act, assert; one behavior per test.
+5. Note any fixtures, mocks, and regressions the suite is locking in.\
+"""
+output_schema = """\
+Return: file path(s), test code, a coverage matrix (behavior × case), \
+and assumptions about the framework or fixtures used.\
+"""
+
+[quality_gates]
+hard = [
+    "Must cover edge cases, not just the happy path",
+    "Assertions must verify observable behavior",
+]
+soft = [
+    "Should prefer parametric tests where applicable",
+    "Should avoid over-mocking pure functions",
+]

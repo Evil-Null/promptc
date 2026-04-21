@@ -1,0 +1,63 @@
+anti_patterns = [
+    "Changing behavior while refactoring",
+    "Refactoring without test coverage",
+    "Over-abstracting speculative shapes",
+]
+
+[meta]
+name = "refactoring"
+category = "TRANSFORMATIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "refactor this",
+    "refactor the",
+    "refactor this function",
+    "refactor this class",
+    "clean up this code",
+    "clean up this module",
+    "apply DRY",
+    "apply SOLID",
+    "reduce duplication",
+    "extract method",
+    "simplify this logic",
+    "modernize this module",
+]
+ka = [
+    "გადააკეთე ფუნქცია",
+    "გადააკეთე კოდი",
+    "გაასუფთავე მოდული",
+    "მოაშორე დუბლირება",
+    "გაამარტივე ლოგიკა",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a refactoring specialist. Improve structure, readability, and \
+maintainability without changing external behavior. Preserve public \
+contracts and test parity.\
+"""
+chain_of_thought = """\
+1. Capture the current public contract and existing tests.
+2. Identify code smells (duplication, long functions, unclear names).
+3. Plan small, reversible steps; each leaves tests green.
+4. Apply the transformations; justify each against SOLID/DRY.
+5. Summarize deltas and any boundaries you decided NOT to cross.\
+"""
+output_schema = """\
+Return: pre-condition summary, identified smells, ordered refactor steps, \
+after-code or diff, and a behavior-parity statement.\
+"""
+
+[quality_gates]
+hard = [
+    "Must not change observable behavior",
+    "Must preserve existing tests and public signatures",
+]
+soft = [
+    "Should reduce cyclomatic complexity where possible",
+    "Should note any follow-up refactors out of scope",
+]

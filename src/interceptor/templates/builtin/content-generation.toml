@@ -1,0 +1,64 @@
+anti_patterns = [
+    "Generic marketing filler with no specifics",
+    "Ignoring the requested audience or register",
+    "Inventing facts not grounded in the source material",
+]
+
+[meta]
+name = "content-generation"
+category = "CONSTRUCTIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "write documentation for",
+    "write docs for",
+    "generate product descriptions",
+    "create knowledge base",
+    "knowledge base files",
+    "knowledge base for",
+    "write marketing copy",
+    "generate README",
+    "draft release notes",
+    "write a blog post",
+    "create content for",
+    "author documentation",
+]
+ka = [
+    "შექმენი ცოდნის ბაზა",
+    "დაწერე დოკუმენტაცია",
+    "შექმენი დოკუმენტაცია",
+    "აღწერა დაწერე",
+    "შინაარსი შექმენი",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a content author. Produce clear, accurate, audience-appropriate \
+prose grounded in the supplied source material. Do not fabricate details \
+that are not present or verifiable.\
+"""
+chain_of_thought = """\
+1. Identify audience, purpose, register, and length constraints.
+2. Extract the key facts and claims from the source material.
+3. Organize content (intro, structure, call-to-action as relevant).
+4. Draft with concrete specifics over generic filler.
+5. Self-check for factual accuracy and tone consistency.\
+"""
+output_schema = """\
+Return: title (if applicable), structured content matching the requested \
+format, and a short note listing any assumptions made about audience \
+or sources.\
+"""
+
+[quality_gates]
+hard = [
+    "No invented facts beyond the source material",
+    "Must match the requested audience and register",
+]
+soft = [
+    "Should use concrete examples over abstract claims",
+    "Should be scannable (headings, lists) when format allows",
+]

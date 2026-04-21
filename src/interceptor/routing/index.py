@@ -5,6 +5,7 @@ Design reference: interceptor_plan_v2_final.md §A (line ~841).
 
 from __future__ import annotations
 
+import unicodedata
 from collections import Counter
 
 from interceptor.models.template import Template
@@ -18,6 +19,26 @@ TriggerEntry = tuple[str, float]
 TriggerIndex = dict[str, list[TriggerEntry]]
 
 PHRASE_BONUS: float = 1.5  # Multi-word triggers get this multiplier (§A)
+
+# Terminal punctuation stripped from tokens during normalization (Phase C).
+# Covers ASCII, common Unicode, and Georgian-relevant marks. Internal
+# punctuation (e.g. hyphen in "code-review") is preserved to avoid breaking
+# compound tokens.
+_TERMINAL_PUNCT: str = ".,;:!?—–-…·\u201c\u201d\u2018\u2019\"'()[]{}"
+
+
+def _normalize_token(raw: str) -> str:
+    """Normalize a single token: NFC, lowercase, strip terminal punctuation."""
+    if not raw:
+        return ""
+    nfc = unicodedata.normalize("NFC", raw)
+    return nfc.lower().strip(_TERMINAL_PUNCT)
+
+
+def normalize_phrase(phrase: str) -> str:
+    """Normalize a multi-word trigger phrase for indexing/matching."""
+    tokens = [_normalize_token(t) for t in phrase.strip().split()]
+    return " ".join(t for t in tokens if t)
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +59,7 @@ def build_trigger_index(templates: list[Template]) -> TriggerIndex:
     for template in templates:
         seen: set[str] = set()
         for phrase in template.triggers.en + template.triggers.ka:
-            normalized = phrase.strip().lower()
+            normalized = normalize_phrase(phrase)
             if not normalized or normalized in seen:
                 continue
             seen.add(normalized)
@@ -63,10 +84,17 @@ def build_trigger_index(templates: list[Template]) -> TriggerIndex:
 def tokenize(text: str) -> list[str]:
     """Normalize and split *text* into lowercase tokens.
 
-    V1 implementation: simple ``str.lower().split()``.
-    Georgian lemmatization deferred to a later phase.
+    Normalization (Phase C):
+        1. Unicode NFC normalization (combining chars → canonical).
+        2. Lowercase.
+        3. Strip terminal punctuation from each token.
+
+    Internal punctuation (e.g. ``code-review``) is preserved.
     """
-    return [t for t in text.strip().lower().split() if t]
+    return [
+        tok for tok in (_normalize_token(t) for t in text.split())
+        if tok
+    ]
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,48 @@
+{"id": "arch-01", "text": "design system architecture for a payment service", "expected_template": "architecture", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "arch-02", "text": "how to architect a microservice for high throughput", "expected_template": "architecture", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "arch-03", "text": "სისტემის დიზაინი დეპოზიტებისთვის", "expected_template": "architecture", "expected_zone_min": "CONFIRM", "lang": "ka"}
+{"id": "cr-01", "text": "review this pull request for correctness", "expected_template": "code-review", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "cr-02", "text": "code review for the auth module", "expected_template": "code-review", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "cr-03", "text": "კოდის რევიუ გთხოვ", "expected_template": "code-review", "expected_zone_min": "CONFIRM", "lang": "ka"}
+{"id": "cr-04", "text": "კოდის რევიუ?", "expected_template": "code-review", "expected_zone_min": "CONFIRM", "lang": "ka", "notes": "punctuation must not downgrade"}
+{"id": "sec-01", "text": "audit this code for security vulnerabilities", "expected_template": "security-audit", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "sec-02", "text": "check for SQL injection vulnerabilities", "expected_template": "security-audit", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "sec-03", "text": "უსაფრთხოების შემოწმება", "expected_template": "security-audit", "expected_zone_min": "CONFIRM", "lang": "ka"}
+{"id": "exp-01", "text": "explain how this function works", "expected_template": "explain", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "exp-02", "text": "break this down for me", "expected_template": "explain", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "exp-03", "text": "ამიხსენი რას აკეთებს", "expected_template": "explain", "expected_zone_min": "CONFIRM", "lang": "ka"}
+
+{"id": "plan-01", "text": "create a todo list for this refactor", "expected_template": "task-planning", "expected_zone_min": "CONFIRM", "lang": "en", "notes": "currently wrong: architecture@0.62"}
+{"id": "plan-02", "text": "break down this work into tasks", "expected_template": "task-planning", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "plan-03", "text": "build a roadmap for migration", "expected_template": "task-planning", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "plan-04", "text": "დაყავი ამოცანებად", "expected_template": "task-planning", "expected_zone_min": "CONFIRM", "lang": "ka"}
+
+{"id": "content-01", "text": "create RAG knowledge base files for our AI agent", "expected_template": "content-generation", "expected_zone_min": "CONFIRM", "lang": "en", "notes": "currently wrong: architecture@0.62"}
+{"id": "content-02", "text": "write documentation for this library", "expected_template": "content-generation", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "content-03", "text": "generate product descriptions from specs", "expected_template": "content-generation", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "content-04", "text": "შექმენი ცოდნის ბაზა", "expected_template": "content-generation", "expected_zone_min": "CONFIRM", "lang": "ka"}
+
+{"id": "debug-01", "text": "debug this stack trace from production", "expected_template": "debugging", "expected_zone_min": "CONFIRM", "lang": "en", "notes": "currently PASSTHROUGH"}
+{"id": "debug-02", "text": "find the root cause of this crash", "expected_template": "debugging", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "debug-03", "text": "fix error in system", "expected_template": "debugging", "expected_zone_min": "CONFIRM", "lang": "en", "notes": "currently wrong: architecture@0.50 via noun absorption"}
+{"id": "debug-04", "text": "იპოვე ერორის მიზეზი", "expected_template": "debugging", "expected_zone_min": "CONFIRM", "lang": "ka"}
+
+{"id": "refactor-01", "text": "refactor this function to use DRY principles", "expected_template": "refactoring", "expected_zone_min": "CONFIRM", "lang": "en", "notes": "currently PASSTHROUGH"}
+{"id": "refactor-02", "text": "clean up this legacy module", "expected_template": "refactoring", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "refactor-03", "text": "apply SOLID principles to this class", "expected_template": "refactoring", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "refactor-04", "text": "გადააკეთე ეს ფუნქცია", "expected_template": "refactoring", "expected_zone_min": "CONFIRM", "lang": "ka"}
+
+{"id": "testgen-01", "text": "write unit tests for this module", "expected_template": "test-generation", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "testgen-02", "text": "generate test cases for edge conditions", "expected_template": "test-generation", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "testgen-03", "text": "დაწერე ტესტები ამ ფუნქციისთვის", "expected_template": "test-generation", "expected_zone_min": "CONFIRM", "lang": "ka"}
+
+{"id": "testrev-01", "text": "review test coverage for this PR", "expected_template": "test-review", "expected_zone_min": "CONFIRM", "lang": "en"}
+{"id": "testrev-02", "text": "evaluate the quality of existing test suite", "expected_template": "test-review", "expected_zone_min": "CONFIRM", "lang": "en"}
+
+{"id": "neg-01", "text": "don't refactor anything", "expected_template": null, "expected_zone_min": "PASSTHROUGH", "lang": "en"}
+{"id": "neg-02", "text": "no tests needed", "expected_template": null, "expected_zone_min": "PASSTHROUGH", "lang": "en"}
+{"id": "neg-03", "text": "hello", "expected_template": null, "expected_zone_min": "PASSTHROUGH", "lang": "en", "notes": "trivial input must not match"}
+{"id": "neg-04", "text": "system", "expected_template": null, "expected_zone_min": "PASSTHROUGH", "lang": "en", "notes": "single generic noun must not trigger architecture"}
+
+{"id": "amb-01", "text": "the code has a bug somewhere", "expected_template": "code-review", "expected_zone_min": "SUGGEST", "lang": "en", "notes": "ambiguous; either code-review or debugging acceptable"}
+{"id": "amb-02", "text": "improve this", "expected_template": "refactoring", "expected_zone_min": "SUGGEST", "lang": "en", "notes": "category-only match caps at SUGGEST"}

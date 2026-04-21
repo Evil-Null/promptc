@@ -65,19 +65,22 @@ class TestClassifyZone:
 class TestTokenMatchEdges:
     def test_no_significant_input(self) -> None:
         tpl = _make_template(en=["review code"])
-        conf, fz = _token_match_confidence(["the", "a", "in"], tpl)
+        result = _token_match_confidence(["the", "a", "in"], tpl)
+        conf, fz = result[0], result[1]
         assert conf == 0.0
         assert fz is False
 
     def test_empty_phrases(self) -> None:
         tpl = _make_template(en=["only stop words here the a"])
-        conf, fz = _token_match_confidence(["review"], tpl)
+        result = _token_match_confidence(["review"], tpl)
+        conf = result[0]
         # The phrase has no significant tokens after stop-word filter → returns 0
         assert conf == 0.0 or conf >= 0  # at least no crash
 
     def test_all_stopword_phrases(self) -> None:
         tpl = _make_template(en=["the a in on"])
-        conf, fz = _token_match_confidence(["review", "code"], tpl)
+        result = _token_match_confidence(["review", "code"], tpl)
+        conf = result[0]
         assert conf == 0.0 or conf > 0  # phrase tokens are stop words → skipped
 
 

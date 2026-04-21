@@ -5,6 +5,48 @@ All notable changes to the **Prompt Compiler** (`promptc`) are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] — 2025-11-21
+
+### Added
+
+- **6 new builtin templates** closing routing coverage gaps:
+  - `debugging` (ANALYTICAL, STRONG) — error, stack trace, root cause (en + ka)
+  - `refactoring` (TRANSFORMATIVE, STRONG) — refactor, cleanup, DRY/SOLID
+  - `task-planning` (CONSTRUCTIVE, STRONG) — todo list, roadmap, breakdown
+  - `content-generation` (CONSTRUCTIVE, STRONG) — knowledge base, docs, copy
+  - `test-generation` (CONSTRUCTIVE, STRONG) — test cases, coverage, TDD
+  - `test-review` (EVALUATIVE, STRONG) — review test suite, assess coverage
+- **Routing evaluation harness** — `scripts/eval_route.py` + `tests/eval/corpus.jsonl` (40 cases)
+- **Phase G invariant tests** — `tests/test_routing_invariants.py` (30 tests covering tokenizer, caps, coverage map)
+- **Georgian category keywords** — 17 new KA entries in `_CATEGORY_KEYWORDS`
+
+### Changed
+
+- **Scoring hardening**:
+  - Unigram-only matches cap at SUGGEST (`_UNIGRAM_ONLY_CAP = 0.54`) — prevents single common word from reaching CONFIRM
+  - Pure category-affinity wins cap at SUGGEST (`_CATEGORY_ONLY_CAP = 0.54`)
+  - Generic noun penalty (`_GENERIC_WEIGHT = 0.5`) — "system"/"code"/"data" alone contribute less
+  - Phrase-evidence broadened: `unique_count >= 2` or full template-name-in-input counts as multi-signal
+  - Synergy bonus (+0.05) now requires real phrase evidence
+  - Tiebreaker added: richer phrase evidence wins ties at the 0.95 cap
+  - `best_exact_ratio` denominator fixed: uses `len(significant_phrase)`, not `len(ptokens)` with stopwords
+- **Tokenizer** — NFC normalization + punctuation strip (`normalize_phrase` exported from `index`)
+- **`explain` template** — strength MEDIUM → STRONG
+- **`code-review` template** — added "pull request" and "review pull request" triggers
+
+### Fixed
+
+- "create RAG knowledge base files" → now routes to `content-generation` (was PASSTHROUGH)
+- "create todo list for each file" → now routes to `task-planning` (was `architecture`)
+- "fix error in system" → now routes to `debugging` (was `code-review` @ 0.21)
+- "review" / "design" alone — capped at SUGGEST zone (was CONFIRM)
+- "explain how this function works" — reaches CONFIRM (was capped by fuzzy-relevance bug)
+
+### Metrics
+
+- **Routing eval accuracy**: 37.5% → 100.0% (40/40 cases)
+- **Test suite**: +52 tests (1275 → 1327 excluding 2 preexisting env failures)
+
 ## [1.3.1] — 2025-07-18
 
 ### Added

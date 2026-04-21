@@ -1,0 +1,628 @@
+{
+  "corpus": "tests/eval/corpus.jsonl",
+  "builtin_only": true,
+  "totals": {
+    "total": 40,
+    "pass": 15,
+    "fail_template": 23,
+    "fail_zone": 2
+  },
+  "outcomes": [
+    {
+      "id": "amb-01",
+      "text": "the code has a bug somewhere",
+      "lang": "en",
+      "actual_template": "code-review",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.67,
+      "method": "USER_CHOICE",
+      "runner_up": "security-audit",
+      "top_scores": {
+        "code-review": 0.67,
+        "security-audit": 0.62
+      },
+      "expected_template": "debugging",
+      "expected_zone_min": "SUGGEST",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "amb-02",
+      "text": "improve this",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": null,
+      "expected_zone_min": "PASSTHROUGH",
+      "verdict": "pass"
+    },
+    {
+      "id": "arch-01",
+      "text": "design system architecture for a payment service",
+      "lang": "en",
+      "actual_template": "architecture",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "architecture": 0.95
+      },
+      "expected_template": "architecture",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "arch-02",
+      "text": "how to architect a microservice for high throughput",
+      "lang": "en",
+      "actual_template": "architecture",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": "explain",
+      "top_scores": {
+        "architecture": 0.95,
+        "explain": 0.2852
+      },
+      "expected_template": "architecture",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "arch-03",
+      "text": "სისტემის დიზაინი დეპოზიტებისთვის",
+      "lang": "ka",
+      "actual_template": "architecture",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "architecture": 0.95
+      },
+      "expected_template": "architecture",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "content-01",
+      "text": "create RAG knowledge base files for our AI agent",
+      "lang": "en",
+      "actual_template": "architecture",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.62,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "architecture": 0.62
+      },
+      "expected_template": "content-generation",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "content-02",
+      "text": "write documentation for this library",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "content-generation",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "content-03",
+      "text": "generate product descriptions from specs",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "content-generation",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "content-04",
+      "text": "შექმენი ცოდნის ბაზა",
+      "lang": "ka",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "content-generation",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "cr-01",
+      "text": "review this pull request for correctness",
+      "lang": "en",
+      "actual_template": "code-review",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.67,
+      "method": "USER_CHOICE",
+      "runner_up": "security-audit",
+      "top_scores": {
+        "code-review": 0.67,
+        "security-audit": 0.67
+      },
+      "expected_template": "code-review",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "cr-02",
+      "text": "code review for the auth module",
+      "lang": "en",
+      "actual_template": "code-review",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": "security-audit",
+      "top_scores": {
+        "code-review": 0.95,
+        "security-audit": 0.67
+      },
+      "expected_template": "code-review",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "cr-03",
+      "text": "კოდის რევიუ გთხოვ",
+      "lang": "ka",
+      "actual_template": "code-review",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "code-review": 0.95
+      },
+      "expected_template": "code-review",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "cr-04",
+      "text": "კოდის რევიუ?",
+      "lang": "ka",
+      "actual_template": "code-review",
+      "actual_zone": "SUGGEST",
+      "confidence": 0.54,
+      "method": "FUZZY_MATCH",
+      "runner_up": null,
+      "top_scores": {
+        "code-review": 0.9
+      },
+      "expected_template": "code-review",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_zone"
+    },
+    {
+      "id": "debug-01",
+      "text": "debug this stack trace from production",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "debugging",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "debug-02",
+      "text": "find the root cause of this crash",
+      "lang": "en",
+      "actual_template": "code-review",
+      "actual_zone": "SUGGEST",
+      "confidence": 0.5,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "code-review": 0.5
+      },
+      "expected_template": "debugging",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "debug-03",
+      "text": "fix error in system",
+      "lang": "en",
+      "actual_template": "architecture",
+      "actual_zone": "SUGGEST",
+      "confidence": 0.5,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "architecture": 0.5
+      },
+      "expected_template": "debugging",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "debug-04",
+      "text": "იპოვე ერორის მიზეზი",
+      "lang": "ka",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "debugging",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "exp-01",
+      "text": "explain how this function works",
+      "lang": "en",
+      "actual_template": "explain",
+      "actual_zone": "SUGGEST",
+      "confidence": 0.54,
+      "method": "FUZZY_MATCH",
+      "runner_up": null,
+      "top_scores": {
+        "explain": 0.644
+      },
+      "expected_template": "explain",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_zone"
+    },
+    {
+      "id": "exp-02",
+      "text": "break this down for me",
+      "lang": "en",
+      "actual_template": "explain",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.7053,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "explain": 0.7053
+      },
+      "expected_template": "explain",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "exp-03",
+      "text": "ამიხსენი რას აკეთებს",
+      "lang": "ka",
+      "actual_template": "explain",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "explain": 0.95
+      },
+      "expected_template": "explain",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "neg-01",
+      "text": "don't refactor anything",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": null,
+      "expected_zone_min": "PASSTHROUGH",
+      "verdict": "pass"
+    },
+    {
+      "id": "neg-02",
+      "text": "no tests needed",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": null,
+      "expected_zone_min": "PASSTHROUGH",
+      "verdict": "pass"
+    },
+    {
+      "id": "neg-03",
+      "text": "hello",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": null,
+      "expected_zone_min": "PASSTHROUGH",
+      "verdict": "pass"
+    },
+    {
+      "id": "neg-04",
+      "text": "system",
+      "lang": "en",
+      "actual_template": "architecture",
+      "actual_zone": "SUGGEST",
+      "confidence": 0.5,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "architecture": 0.5
+      },
+      "expected_template": null,
+      "expected_zone_min": "PASSTHROUGH",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "plan-01",
+      "text": "create a todo list for this refactor",
+      "lang": "en",
+      "actual_template": "architecture",
+      "actual_zone": "SUGGEST",
+      "confidence": 0.31,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "architecture": 0.31
+      },
+      "expected_template": "task-planning",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "plan-02",
+      "text": "break down this work into tasks",
+      "lang": "en",
+      "actual_template": "explain",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.7973,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "explain": 0.7973
+      },
+      "expected_template": "task-planning",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "plan-03",
+      "text": "build a roadmap for migration",
+      "lang": "en",
+      "actual_template": "architecture",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.62,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "architecture": 0.62
+      },
+      "expected_template": "task-planning",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "plan-04",
+      "text": "დაყავი ამოცანებად",
+      "lang": "ka",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "task-planning",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "refactor-01",
+      "text": "refactor this function to use DRY principles",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "refactoring",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "refactor-02",
+      "text": "clean up this legacy module",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "refactoring",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "refactor-03",
+      "text": "apply SOLID principles to this class",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "refactoring",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "refactor-04",
+      "text": "გადააკეთე ეს ფუნქცია",
+      "lang": "ka",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "refactoring",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "sec-01",
+      "text": "audit this code for security vulnerabilities",
+      "lang": "en",
+      "actual_template": "security-audit",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": "code-review",
+      "top_scores": {
+        "security-audit": 0.95,
+        "code-review": 0.79
+      },
+      "expected_template": "security-audit",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "sec-02",
+      "text": "check for SQL injection vulnerabilities",
+      "lang": "en",
+      "actual_template": "security-audit",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.7667,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "security-audit": 0.7667
+      },
+      "expected_template": "security-audit",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "sec-03",
+      "text": "უსაფრთხოების შემოწმება",
+      "lang": "ka",
+      "actual_template": "security-audit",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": null,
+      "top_scores": {
+        "security-audit": 0.95
+      },
+      "expected_template": "security-audit",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "pass"
+    },
+    {
+      "id": "testgen-01",
+      "text": "write unit tests for this module",
+      "lang": "en",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "test-generation",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "testgen-02",
+      "text": "generate test cases for edge conditions",
+      "lang": "en",
+      "actual_template": "code-review",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.62,
+      "method": "USER_CHOICE",
+      "runner_up": "security-audit",
+      "top_scores": {
+        "code-review": 0.62,
+        "security-audit": 0.62
+      },
+      "expected_template": "test-generation",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "testgen-03",
+      "text": "დაწერე ტესტები ამ ფუნქციისთვის",
+      "lang": "ka",
+      "actual_template": null,
+      "actual_zone": "PASSTHROUGH",
+      "confidence": 0.0,
+      "method": "PASSTHROUGH",
+      "runner_up": null,
+      "top_scores": {},
+      "expected_template": "test-generation",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "testrev-01",
+      "text": "review test coverage for this PR",
+      "lang": "en",
+      "actual_template": "code-review",
+      "actual_zone": "AUTO_SELECT",
+      "confidence": 0.95,
+      "method": "SCORE_WINNER",
+      "runner_up": "security-audit",
+      "top_scores": {
+        "code-review": 0.95,
+        "security-audit": 0.79
+      },
+      "expected_template": "test-review",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    },
+    {
+      "id": "testrev-02",
+      "text": "evaluate the quality of existing test suite",
+      "lang": "en",
+      "actual_template": "code-review",
+      "actual_zone": "CONFIRM",
+      "confidence": 0.62,
+      "method": "USER_CHOICE",
+      "runner_up": "security-audit",
+      "top_scores": {
+        "code-review": 0.62,
+        "security-audit": 0.62
+      },
+      "expected_template": "test-review",
+      "expected_zone_min": "CONFIRM",
+      "verdict": "fail_template"
+    }
+  ]
+}

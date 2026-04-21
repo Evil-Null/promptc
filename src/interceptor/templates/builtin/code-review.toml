@@ -18,6 +18,8 @@ en = [
     "review my code",
     "find bugs",
     "review PR",
+    "pull request",
+    "review pull request",
 ]
 ka = [
     "კოდის რევიუ",

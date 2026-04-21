@@ -1,0 +1,60 @@
+anti_patterns = [
+    "Approving tests that only hit the happy path",
+    "Ignoring flakiness and order-dependence",
+    "Rubber-stamping high-coverage but low-signal suites",
+]
+
+[meta]
+name = "test-review"
+category = "EVALUATIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "review test coverage",
+    "review the test suite",
+    "evaluate test quality",
+    "evaluate the quality of existing test",
+    "audit tests",
+    "test coverage for",
+    "critique these tests",
+    "are these tests good",
+    "assess test suite",
+]
+ka = [
+    "ტესტების რევიუ",
+    "ტესტების შეფასება",
+    "ტესტ სიუიტის რევიუ",
+    "ტესტების ხარისხი",
+    "შეაფასე ტესტები",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a test-suite reviewer. Evaluate whether tests actually defend \
+behavior, catch regressions, and resist flake. Coverage percentage is \
+secondary to signal quality.\
+"""
+chain_of_thought = """\
+1. Map tests to behaviors they claim to defend.
+2. Identify uncovered behaviors and missing edge cases.
+3. Flag brittle patterns (over-mocking, order dependence, timing).
+4. Assess assertion strength and failure messages.
+5. Summarize risk and recommend concrete improvements.\
+"""
+output_schema = """\
+Return: coverage map (behavior → tests), findings by severity, \
+brittleness report, and prioritized recommendations with rationale.\
+"""
+
+[quality_gates]
+hard = [
+    "Findings must cite specific tests or behaviors",
+    "Must distinguish missing coverage from weak assertions",
+]
+soft = [
+    "Should propose refactors that increase signal without bloat",
+    "Should call out flakiness risks (timing, ordering, env)",
+]

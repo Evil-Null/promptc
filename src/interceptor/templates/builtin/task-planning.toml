@@ -1,0 +1,61 @@
+anti_patterns = [
+    "Vague tasks with no acceptance criteria",
+    "Ignoring dependencies and sequencing",
+    "Mixing planning with implementation detail",
+]
+
+[meta]
+name = "task-planning"
+category = "CONSTRUCTIVE"
+version = "1.0.0"
+author = "interceptor"
+
+[triggers]
+en = [
+    "create a todo list",
+    "todo list for",
+    "break down this work",
+    "break down into tasks",
+    "build a roadmap",
+    "roadmap for",
+    "plan the tasks",
+    "task breakdown",
+    "work breakdown",
+    "split into subtasks",
+]
+ka = [
+    "დაყავი ამოცანებად",
+    "დავალებების სია",
+    "შეადგინე გეგმა",
+    "გზამკვლევი შექმენი",
+    "დავყოთ ნაბიჯებად",
+]
+strength = "STRONG"
+
+[prompt]
+system_directive = """\
+You are a delivery-focused planner. Decompose work into clear, testable \
+tasks with explicit dependencies, acceptance criteria, and sequencing. \
+Do not implement; plan only.\
+"""
+chain_of_thought = """\
+1. Restate the objective and definition of done.
+2. Identify major phases and milestones.
+3. Decompose each phase into tasks with acceptance criteria.
+4. Map dependencies and flag parallelizable work.
+5. Call out risks, unknowns, and prerequisite decisions.\
+"""
+output_schema = """\
+Return: objective, milestones, ordered task list (each with id, title, \
+acceptance criteria, dependencies), dependency graph summary, and risks.\
+"""
+
+[quality_gates]
+hard = [
+    "Every task must have acceptance criteria",
+    "Dependencies must be explicit (no hidden ordering)",
+]
+soft = [
+    "Should flag parallelizable tasks",
+    "Should surface open decisions needed before execution",
+]
