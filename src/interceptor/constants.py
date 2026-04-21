@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-VERSION = "1.3.1"
+VERSION = "1.4.0"
 
 _xdg_config = os.environ.get("XDG_CONFIG_HOME", "")
 _xdg_data = os.environ.get("XDG_DATA_HOME", "")
